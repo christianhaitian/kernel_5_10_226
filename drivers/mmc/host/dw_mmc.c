@@ -322,6 +322,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 			     SDMMC_CMD_PRV_DAT_WAIT, 0);
 	}
 
+	if (mmc->caps2 & MMC_CAP2_WIFI_RK912 &&
+		cmd->opcode == SD_IO_RW_DIRECT)
+		cmdr |= SDMMC_CMD_PRV_DAT_WAIT;
+
 	if (cmd->flags & MMC_RSP_PRESENT) {
 		/* We expect a response, so set this bit */
 		cmdr |= SDMMC_CMD_RESP_EXP;
@@ -988,6 +992,28 @@ static void dw_mci_post_req(struct mmc_host *mmc,
 	data->host_cookie = COOKIE_UNMAPPED;
 }
 
+static int dw_mci_set_sdio_status(struct mmc_host *mmc, int val)
+{
+	struct dw_mci_slot *slot = mmc_priv(mmc);
+	struct dw_mci *host = slot->host;
+
+	if (!(mmc->restrict_caps & RESTRICT_CARD_TYPE_SDIO))
+		return 0;
+
+	spin_lock_bh(&host->lock);
+
+	if (val)
+		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+	else
+		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+
+	spin_unlock_bh(&host->lock);
+
+	mmc_detect_change(slot->mmc, 20);
+
+	return 0;
+}
+
 static int dw_mci_get_cd(struct mmc_host *mmc)
 {
 	int present;
@@ -1306,7 +1332,8 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
 
 		/* enable clock; only low power if no SDIO */
 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
-		if (!test_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags))
+		if (!test_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags) &&
+			!(slot->mmc->caps2 & MMC_CAP2_WIFI_RK912))
 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
 		mci_writel(host, CLKENA, clk_en_a);
 
@@ -1858,6 +1885,7 @@ static const struct mmc_host_ops dw_mci_ops = {
 	.pre_req		= dw_mci_pre_req,
 	.post_req		= dw_mci_post_req,
 	.set_ios		= dw_mci_set_ios,
+	.set_sdio_status	= dw_mci_set_sdio_status,
 	.get_ro			= dw_mci_get_ro,
 	.get_cd			= dw_mci_get_cd,
 	.hw_reset               = dw_mci_hw_reset,
@@ -3005,6 +3033,9 @@ static int dw_mci_init_slot(struct dw_mci *host)
 	}
 
 	dw_mci_get_cd(mmc);
+	
+	if (mmc->caps2 & MMC_CAP2_WIFI_RK912)
+		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
 
 	ret = mmc_add_host(mmc);
 	if (ret)

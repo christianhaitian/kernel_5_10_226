@@ -224,7 +224,7 @@ int mmc_of_parse(struct mmc_host *host)
 	struct device *dev = host->parent;
 	u32 bus_width, drv_type, cd_debounce_delay_ms;
 	int ret;
-
+printk("bruce test ----000 .\n");
 	if (!dev || !dev_fwnode(dev))
 		return 0;
 
@@ -234,7 +234,7 @@ int mmc_of_parse(struct mmc_host *host)
 			"\"bus-width\" property is missing, assuming 1 bit.\n");
 		bus_width = 1;
 	}
-
+printk("bruce test ---- 3333.\n");
 	switch (bus_width) {
 	case 8:
 		host->caps |= MMC_CAP_8_BIT_DATA;
@@ -249,7 +249,7 @@ int mmc_of_parse(struct mmc_host *host)
 			"Invalid \"bus-width\" value %u!\n", bus_width);
 		return -EINVAL;
 	}
-
+printk("bruce test ---- 4444.\n");
 	/* f_max is obtained from the optional "max-frequency" property */
 	device_property_read_u32(dev, "max-frequency", &host->f_max);
 
@@ -287,7 +287,7 @@ int mmc_of_parse(struct mmc_host *host)
 		else if (ret != -ENOENT && ret != -ENOSYS)
 			return ret;
 	}
-
+printk("bruce test ----5555 .\n");
 	/* Parse Write Protection */
 
 	if (device_property_read_bool(dev, "wp-inverted"))
@@ -353,6 +353,8 @@ int mmc_of_parse(struct mmc_host *host)
 		host->caps2 |= MMC_CAP2_NO_SD;
 	if (device_property_read_bool(dev, "no-mmc"))
 		host->caps2 |= MMC_CAP2_NO_MMC;
+	if (device_property_read_bool(dev, "supports-rk912"))
+		host->caps2 |= MMC_CAP2_WIFI_RK912;
 	if (device_property_read_bool(dev, "no-prescan-powerup"))
 		host->caps2 |= MMC_CAP2_NO_PRESCAN_POWERUP;
 
@@ -364,6 +366,15 @@ int mmc_of_parse(struct mmc_host *host)
 			dev_err(host->parent,
 				"can't use fixed driver type, media is removable\n");
 	}
+	printk("bruce test ---- 666.\n");
+	if (device_property_read_bool(dev, "supports-sd"))
+		host->restrict_caps |= RESTRICT_CARD_TYPE_SD;
+	if (device_property_read_bool(dev, "supports-sdio")){
+		host->restrict_caps |= RESTRICT_CARD_TYPE_SDIO;
+		printk("bruce test ---- 11.\n");
+		}
+	if (device_property_read_bool(dev, "supports-emmc"))
+		host->restrict_caps |= RESTRICT_CARD_TYPE_EMMC;
 
 	host->dsr_req = !device_property_read_u32(dev, "dsr", &host->dsr);
 	if (host->dsr_req && (host->dsr & ~0xffff)) {
@@ -446,6 +457,7 @@ static int mmc_first_nonreserved_index(void)
  *
  *	Initialise the per-host structure.
  */
+static struct mmc_host *primary_sdio_host;
 struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 {
 	int index;
@@ -576,6 +588,10 @@ int mmc_add_host(struct mmc_host *host)
 #ifdef CONFIG_DEBUG_FS
 	mmc_add_host_debugfs(host);
 #endif
+	printk("bruce test ---- 222.\n");
+	if (host->restrict_caps & RESTRICT_CARD_TYPE_SDIO){
+		primary_sdio_host = host;
+	}
 
 	mmc_start_host(host);
 	return 0;
@@ -620,3 +636,46 @@ void mmc_free_host(struct mmc_host *host)
 }
 
 EXPORT_SYMBOL(mmc_free_host);
+
+
+/**
+ * mmc_host_rescan - triger software rescan flow
+ * @host: mmc host
+ *
+ * rescan slot attach in the assigned host.
+ * If @host is NULL, default rescan primary_sdio_host
+ * saved by mmc_add_host().
+ * OR, rescan host from argument.
+ *
+ */
+int mmc_host_rescan(struct mmc_host *host, int val, int is_cap_sdio_irq)
+{
+	if (NULL != primary_sdio_host) {
+		if (!host)
+			host = primary_sdio_host;
+		else
+			pr_info("%s: mmc_host_rescan pass in host from argument!\n",
+				mmc_hostname(host));
+	} else {
+		pr_err("bruce --- sdio: host isn't  initialization successfully.\n");
+		return -ENOMEDIUM;
+	}
+
+	pr_info("%s:mmc host rescan start!\n", mmc_hostname(host));
+
+	/*  0: oob  1:cap-sdio-irq */
+	if (is_cap_sdio_irq == 1) {
+		host->caps |= MMC_CAP_SDIO_IRQ;
+	} else if (is_cap_sdio_irq == 0) {
+		host->caps &= ~MMC_CAP_SDIO_IRQ;
+	} else {
+		dev_err(&host->class_dev, "sdio: host doesn't identify oob or sdio_irq mode!\n");
+		return -ENOMEDIUM;
+	}
+
+	if (!(host->caps & MMC_CAP_NONREMOVABLE) && host->ops->set_sdio_status)
+		host->ops->set_sdio_status(host, val);
+
+	return 0;
+}
+EXPORT_SYMBOL(mmc_host_rescan);

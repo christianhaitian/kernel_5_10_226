@@ -199,6 +199,7 @@ struct gendisk {
 	struct request_queue *queue;
 	void *private_data;
 
+	int emmc_disk;			/* Flag for emmc devive */
 	int flags;
 	unsigned long state;
 #define GD_NEED_PART_SCAN		0

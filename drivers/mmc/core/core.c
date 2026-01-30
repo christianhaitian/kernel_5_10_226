@@ -231,10 +231,10 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	 */
 	if (sdio_is_io_busy(mrq->cmd->opcode, mrq->cmd->arg) &&
 	    host->ops->card_busy) {
-		int tries = 500; /* Wait aprox 500ms at maximum */
+		int tries = 500*1000; /* Wait aprox 500ms at maximum */
 
 		while (host->ops->card_busy(host) && --tries)
-			mmc_delay(1);
+			udelay(1);
 
 		if (tries == 0) {
 			mrq->cmd->error = -EBUSY;
@@ -2169,6 +2169,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	 * should be ignored by SD/eMMC cards.
 	 * Skip it if we already know that we do not support SDIO commands
 	 */
+#if 1//def MMC_STANDARD_PROBE
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
 		sdio_reset(host);
 
@@ -2189,7 +2190,26 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	if (!(host->caps2 & MMC_CAP2_NO_MMC))
 		if (!mmc_attach_mmc(host))
 			return 0;
+#else
+	if (host->restrict_caps & RESTRICT_CARD_TYPE_SDIO)
+		sdio_reset(host);
 
+	mmc_go_idle(host);
+
+	if (host->restrict_caps &
+	    (RESTRICT_CARD_TYPE_SDIO | RESTRICT_CARD_TYPE_SD))
+		mmc_send_if_cond(host, host->ocr_avail);
+	/* Order's important: probe SDIO, then SD, then MMC */
+	if ((host->restrict_caps & RESTRICT_CARD_TYPE_SDIO) &&
+	    !mmc_attach_sdio(host))
+		return 0;
+	if ((host->restrict_caps & RESTRICT_CARD_TYPE_SD) &&
+	    !mmc_attach_sd(host))
+		return 0;
+	if ((host->restrict_caps & RESTRICT_CARD_TYPE_EMMC) &&
+	    !mmc_attach_mmc(host))
+		return 0;
+#endif
 	mmc_power_off(host);
 	return -EIO;
 }

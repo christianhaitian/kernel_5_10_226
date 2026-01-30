@@ -21,14 +21,11 @@
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#include <openssl/opensslv.h>
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 #include <openssl/engine.h>
-
-/*
- * OpenSSL 3.0 deprecates the OpenSSL's ENGINE API.
- *
- * Remove this if/when that API is no longer used
- */
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #define PKEY_ID_PKCS7 2
 
@@ -121,8 +118,8 @@ int main(int argc, char **argv)
 		fclose(f);
 		exit(0);
 	} else if (!strncmp(cert_src, "pkcs11:", 7)) {
-#ifdef OPENSSL_IS_BORINGSSL
-		ERR(1, "BoringSSL does not support extracting from PKCS#11");
+#if defined(OPENSSL_IS_BORINGSSL) || OPENSSL_VERSION_NUMBER >= 0x30000000L
+		ERR(1, "PKCS#11 engine not supported with this OpenSSL version");
 		exit(1);
 #else
 		ENGINE *e;

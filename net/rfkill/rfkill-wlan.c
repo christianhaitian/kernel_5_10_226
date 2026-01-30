@@ -28,6 +28,7 @@
 #include <linux/interrupt.h>
 #include <asm/irq.h>
 #include <linux/suspend.h>
+#include <linux/mmc/host.h>
 #include <linux/proc_fs.h>
 #include <linux/uaccess.h>
 #include <linux/gpio.h>
@@ -342,9 +343,11 @@ EXPORT_SYMBOL(rockchip_wifi_power);
  * Wifi Sdio Detect Func
  *
  *************************************************************************/
+extern int mmc_host_rescan(struct mmc_host *host, int val, int irq_type);
 int rockchip_wifi_set_carddetect(int val)
 {
-	return 0;
+	//return 0;
+	return mmc_host_rescan(NULL, val, 1);
 }
 EXPORT_SYMBOL(rockchip_wifi_set_carddetect);
 
