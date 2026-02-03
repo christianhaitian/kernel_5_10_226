@@ -386,6 +386,7 @@ config JOYSTICK_FSIA6B
 config JOYSTICK_RG56PRO
 	tristate "RG56 Pro built-in gamepad"
 	depends on IIO
+	select INPUT_FF_MEMLESS
 	help
 	  Say Y here if you have an Anbernic RG56 Pro handheld and want
 	  to use its built-in gamepad. The driver reads analog sticks and
