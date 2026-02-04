@@ -388,7 +388,7 @@ config JOYSTICK_RG56PRO
 	depends on IIO
 	select INPUT_FF_MEMLESS
 	help
-	  Say Y here if you have an Anbernic RG56 Pro handheld and want
+	  Say Y here if you have an AISLPC RG52-mini handheld and want
 	  to use its built-in gamepad. The driver reads analog sticks and
 	  triggers via SARADC IIO channels, ADC-threshold buttons, and
 	  GPIO-connected buttons.
