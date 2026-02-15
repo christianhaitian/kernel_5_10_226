@@ -192,14 +192,15 @@ static int rg56pro_map_stick(struct rg56pro_joystick *joy, int uv, int axis)
 		return 0;
 
 	if (uv < dz_lo) {
-		/* Below dead zone: map [min, dz_lo] → [0, -32767]
-		 * (low voltage = left/up on this hardware) */
-		val = -(int)((long long)(dz_lo - uv) * 32767 /
-			     (dz_lo - joy->axis_min_uv));
+		/* Below dead zone: map [min, dz_lo] → [+32767, 0]
+		 * Right stick: low voltage = right/down (positive).
+		 * Left stick pots are wired with opposite polarity;
+		 * corrected by per-axis negation in the poll function. */
+		val = (int)((long long)(dz_lo - uv) * 32767 /
+			    (dz_lo - joy->axis_min_uv));
 	} else {
-		/* Above dead zone: map [dz_hi, max] → [+32767, 0]
-		 * (high voltage = right/down on this hardware) */
-		val = (int)((long long)(uv - dz_hi) * 32767 /
+		/* Above dead zone: map [dz_hi, max] → [0, -32767] */
+		val = (int)((long long)(dz_hi - uv) * 32767 /
 			    (joy->axis_max_uv - dz_hi));
 	}
 
@@ -411,14 +412,17 @@ static void rg56pro_poll(struct input_dev *input)
 	/* Step 5/6: Report stick axes or dpad */
 	if (joy->axis_to_dpad) {
 		/* Determine logical X/Y values for dpad thresholds.
-		 * rg56pro_map_stick() already returns correct polarity:
-		 * negative = left/up, positive = right/down. */
+		 * Left stick pots have inverted polarity; negate
+		 * both axes before threshold comparison. */
 		int log_x = 0, log_y = 0;
 		bool up, down, left, right;
 
 		for (i = 0; i < 2; i++) {
 			int val = stick_vals[i];
 			unsigned int code = rg56pro_stick_code(joy, i);
+
+			if (code == ABS_X || code == ABS_Y)
+				val = -val;
 
 			if (code == ABS_X)
 				log_x = val;
@@ -460,6 +464,14 @@ static void rg56pro_poll(struct input_dev *input)
 		for (i = 0; i < NUM_STICK_CHANS; i++) {
 			int val = stick_vals[i];
 			unsigned int code = rg56pro_stick_code(joy, i);
+
+			/* Left stick module is rotated 180° (ribbon cable
+			 * faces inward), so its pots have opposite voltage
+			 * polarity from the right stick.  Negate both
+			 * left axes to match Linux ABS convention. */
+			if (code == ABS_X || code == ABS_Y)
+				val = -val;
+
 			input_report_abs(input, code, val);
 		}
 	}
