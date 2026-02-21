@@ -8,13 +8,13 @@
 / {
 	aliases {
 		/delete-property/ ethernet0;
-		/delete-property/ lvds1;
+		/*/delete-property/ lvds1;*/
 	};
 };
 
-&cpu0_opp_table {
+/*&cpu0_opp_table {
 	/delete-node/ opp-1992000000;
-};
+};*/
 
 &lpddr4_params {
 	/* freq info, freq_0 is final frequency, unit: MHz */
@@ -24,6 +24,29 @@
 &lpddr4x_params {
 	/* freq info, freq_0 is final frequency, unit: MHz */
 	freq_0 = <1056>;
+};
+
+&dmc {
+	system-status-freq = <
+		/*system status         freq(KHz)*/
+		SYS_STATUS_NORMAL       780000
+		SYS_STATUS_REBOOT       1056000
+		SYS_STATUS_SUSPEND      324000
+		SYS_STATUS_VIDEO_4K     780000
+		SYS_STATUS_VIDEO_4K_10B 780000
+		SYS_STATUS_BOOST        1056000
+		SYS_STATUS_ISP          1056000
+		SYS_STATUS_PERFORMANCE  1056000
+		SYS_STATUS_DUALVIEW     1056000
+	>;
+};
+
+&dmc_opp_table {
+	opp-1056000000 {
+		opp-hz = /bits/ 64 <1056000000>;
+		opp-microvolt = <900000>;
+	};
+	/delete-node/ opp-1560000000;
 };
 
 &power {
@@ -65,5 +88,5 @@
 /delete-node/ &qos_pcie3x2;
 /delete-node/ &qos_sata0;
 /delete-node/ &sata0;
-/delete-node/ &vp1_out_lvds1;
-/delete-node/ &vp2_out_lvds1;
+/*/delete-node/ &vp1_out_lvds1;
+/delete-node/ &vp2_out_lvds1;*/
