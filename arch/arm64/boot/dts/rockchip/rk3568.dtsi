@@ -3700,6 +3700,21 @@
 		status = "disabled";
 	};
 
+	mipi_dphy0: mipi-dphy@fe850000 {
+		compatible = "rockchip,rk3568-mipi-dphy";
+		reg = <0x0 0xfe850000 0x0 0x10000>;
+		clocks = <&pmucru CLK_MIPIDSIPHY0_REF>, <&cru PCLK_MIPIDSIPHY0>;
+		clock-names = "ref", "pclk";
+		clock-output-names = "mipi_dphy_pll";
+		#clock-cells = <0>;
+		resets = <&cru SRST_P_MIPIDSIPHY0>;
+		reset-names = "apb";
+		power-domains = <&power RK3568_PD_VO>;
+		#phy-cells = <0>;
+		rockchip,grf = <&grf>;
+		status = "disabled";
+	};
+
 	video_phy0: phy@fe850000 {
 		compatible = "rockchip,rk3568-dsi-dphy", "rockchip,rk3568-video-phy";
 		reg = <0x0 0xfe850000  0x0 0x10000>,
@@ -3729,6 +3744,21 @@
 		reset-names = "apb";
 		power-domains = <&power RK3568_PD_VO>;
 		#phy-cells = <0>;
+		status = "disabled";
+	};
+
+	mipi_dphy1: mipi-dphy@fe860000 {
+		compatible = "rockchip,rk3568-mipi-dphy";
+		reg = <0x0 0xfe860000 0x0 0x10000>;
+		clocks = <&pmucru CLK_MIPIDSIPHY1_REF>, <&cru PCLK_MIPIDSIPHY1>;
+		clock-names = "ref", "pclk";
+		clock-output-names = "mipi_dphy1_pll";
+		#clock-cells = <0>;
+		resets = <&cru SRST_P_MIPIDSIPHY1>;
+		reset-names = "apb";
+		power-domains = <&power RK3568_PD_VO>;
+		#phy-cells = <0>;
+		rockchip,grf = <&grf>;
 		status = "disabled";
 	};
 
