@@ -932,11 +932,11 @@
 	};
 };
 
-&video_phy0 {
+&mipi_dphy0 {
 	status = "okay";
 };
 
-&video_phy1 {
+&mipi_dphy1 {
 	status = "disabled";
 };
 
