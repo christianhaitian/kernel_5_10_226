@@ -8,7 +8,7 @@
 / {
 	aliases {
 		/delete-property/ ethernet0;
-		/*/delete-property/ lvds1;*/
+		/delete-property/ lvds1;
 	};
 };
 
@@ -88,5 +88,5 @@
 /delete-node/ &qos_pcie3x2;
 /delete-node/ &qos_sata0;
 /delete-node/ &sata0;
-/*/delete-node/ &vp1_out_lvds1;
-/delete-node/ &vp2_out_lvds1;*/
+/delete-node/ &vp1_out_lvds1;
+/delete-node/ &vp2_out_lvds1;
