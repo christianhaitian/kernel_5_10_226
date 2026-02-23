@@ -396,4 +396,9 @@ config JOYSTICK_RG56PRO
 	  To compile this driver as a module, choose M here: the
 	  module will be called rg56pro-joystick.
 
+config JOYSTICK_SINGLEADCJOY
+	tristate "SINGLEADC joypad driver"
+	help
+	  Made for RK3566 devices.
+
 endif
