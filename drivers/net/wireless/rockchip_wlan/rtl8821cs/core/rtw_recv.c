@@ -3601,11 +3601,11 @@ int validate_mp_recv_frame(_adapter *adapter, union recv_frame *precv_frame)
 	u8 *ptr = precv_frame->u.hdr.rx_data;
 	u8 type, subtype;
 	struct mp_priv *pmppriv = &adapter->mppriv;
-	struct mp_tx		*pmptx;
-	unsigned char	*sa , *da, *bs;
+	struct mp_tx *pmptx;
+	unsigned char *sa, *da, *bs;
 	struct rx_pkt_attrib *pattrib = &precv_frame->u.hdr.attrib;
 	u32 i = 0;
-	u8 rtk_prefix[]={0x52, 0x65, 0x61, 0x6C, 0x4C, 0x6F, 0x76, 0x65, 0x54, 0x65, 0x6B};
+	u8 rtk_prefix[] = {0x52, 0x65, 0x61, 0x6C, 0x4C, 0x6F, 0x76, 0x65, 0x54, 0x65, 0x6B};
 	u8 *prx_data;
 	pmptx = &pmppriv->tx;
 
@@ -3613,8 +3613,8 @@ int validate_mp_recv_frame(_adapter *adapter, union recv_frame *precv_frame)
 	if (pmppriv->mplink_brx == _FALSE) {
 
 		u8 bDumpRxPkt = 0;
-		type =  GetFrameType(ptr);
-		subtype = get_frame_sub_type(ptr); /* bit(7)~bit(2)	 */
+		type = GetFrameType(ptr);
+		subtype = get_frame_sub_type(ptr); /* bit(7)~bit(2) */
 
 		RTW_DBG("hdr len = %d iv_len=%d \n", pattrib->hdrlen , pattrib->iv_len);
 		prx_data = ptr + pattrib->hdrlen + pattrib->iv_len;
@@ -3625,10 +3625,10 @@ int validate_mp_recv_frame(_adapter *adapter, union recv_frame *precv_frame)
 
 			if (_rtw_memcmp(prx_data + i, (void *)&rtk_prefix, 11) == _FALSE) {
 				bDumpRxPkt = 0;
-				RTW_DBG("prx_data = %02X != rtk_prefix[%d] = %02X \n", *(prx_data + i), i , rtk_prefix[i]);
+				RTW_DBG("prx_data = %02X != rtk_prefix[%d] = %02X \n", *(prx_data + i), i, rtk_prefix[i]);
 				} else {
 				bDumpRxPkt = 1;
-				RTW_DBG("prx_data = %02X = rtk_prefix[%d] = %02X \n", *(prx_data + i), i , rtk_prefix[i]);
+				RTW_DBG("prx_data = %02X = rtk_prefix[%d] = %02X \n", *(prx_data + i), i, rtk_prefix[i]);
 				break;
 				}
 		}
@@ -3637,16 +3637,19 @@ int validate_mp_recv_frame(_adapter *adapter, union recv_frame *precv_frame)
 			int i;
 			RTW_INFO("############ type:0x%02x subtype:0x%02x #################\n", type, subtype);
 
-			for (i = 0; i < precv_frame->u.hdr.len; i = i + 8)
+			for (i = 0; i < precv_frame->u.hdr.len; i = i + 8) {
 				RTW_INFO("%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:\n", *(ptr + i),
-					*(ptr + i + 1), *(ptr + i + 2) , *(ptr + i + 3) , *(ptr + i + 4), *(ptr + i + 5), *(ptr + i + 6), *(ptr + i + 7));
-				RTW_INFO("#############################\n");
-				_rtw_memset(pmppriv->mplink_buf, '\0' , sizeof(pmppriv->mplink_buf));
-				_rtw_memcpy(pmppriv->mplink_buf, ptr, precv_frame->u.hdr.len);
-				pmppriv->mplink_rx_len = precv_frame->u.hdr.len;
-				pmppriv->mplink_brx =_TRUE;
+						 *(ptr + i + 1), *(ptr + i + 2), *(ptr + i + 3),
+						 *(ptr + i + 4), *(ptr + i + 5), *(ptr + i + 6), *(ptr + i + 7));
+			}
+			RTW_INFO("#############################\n");
+			_rtw_memset(pmppriv->mplink_buf, '\0', sizeof(pmppriv->mplink_buf));
+			_rtw_memcpy(pmppriv->mplink_buf, ptr, precv_frame->u.hdr.len);
+			pmppriv->mplink_rx_len = precv_frame->u.hdr.len;
+			pmppriv->mplink_brx = _TRUE;
 		}
 	}
+
 	if (pmppriv->bloopback) {
 		if (_rtw_memcmp(ptr + 24, pmptx->buf + 24, precv_frame->u.hdr.len - 24) == _FALSE) {
 			RTW_INFO("Compare payload content Fail !!!\n");
@@ -3665,9 +3668,9 @@ int validate_mp_recv_frame(_adapter *adapter, union recv_frame *precv_frame)
 			ret = _FAIL;
 
 		RTW_DBG("############ type:0x%02x subtype:0x%02x #################\n", type, subtype);
-		RTW_DBG("A2 sa %02X:%02X:%02X:%02X:%02X:%02X \n", *(sa) , *(sa + 1), *(sa+ 2), *(sa + 3), *(sa + 4), *(sa + 5));
-		RTW_DBG("A1 da %02X:%02X:%02X:%02X:%02X:%02X \n", *(da) , *(da + 1), *(da+ 2), *(da + 3), *(da + 4), *(da + 5));
-		RTW_DBG("A3 bs %02X:%02X:%02X:%02X:%02X:%02X \n --------------------------\n", *(bs) , *(bs + 1), *(bs+ 2), *(bs + 3), *(bs + 4), *(bs + 5));
+		RTW_DBG("A2 sa %02X:%02X:%02X:%02X:%02X:%02X \n", *(sa), *(sa + 1), *(sa + 2), *(sa + 3), *(sa + 4), *(sa + 5));
+		RTW_DBG("A1 da %02X:%02X:%02X:%02X:%02X:%02X \n", *(da), *(da + 1), *(da + 2), *(da + 3), *(da + 4), *(da + 5));
+		RTW_DBG("A3 bs %02X:%02X:%02X:%02X:%02X:%02X \n --------------------------\n", *(bs), *(bs + 1), *(bs + 2), *(bs + 3), *(bs + 4), *(bs + 5));
 	}
 
 	if (!adapter->mppriv.bmac_filter)
@@ -3678,6 +3681,7 @@ int validate_mp_recv_frame(_adapter *adapter, union recv_frame *precv_frame)
 
 	return ret;
 }
+#endif
 
 static sint MPwlanhdr_to_ethhdr(union recv_frame *precvframe)
 {
@@ -3855,8 +3859,6 @@ exit:
 	return ret;
 
 }
-#endif
-
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24))
 int recv_frame_monitor(_adapter *padapter, union recv_frame *rframe)

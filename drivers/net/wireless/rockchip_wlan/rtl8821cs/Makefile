@@ -272,6 +272,7 @@ _HAL_INTFS_FILES :=	hal/hal_intf.o \
 
 EXTRA_CFLAGS += -I$(src)/platform
 _PLATFORM_FILES := platform/platform_ops.o
+_PLATFORM_FILES += platform/platform_generic.o
 
 EXTRA_CFLAGS += -I$(src)/hal/btc
 

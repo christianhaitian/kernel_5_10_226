@@ -32,6 +32,8 @@
 #include "sdio/rtl8821cs.h"
 #endif
 
+MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
+
 static void read_chip_version(PADAPTER adapter)
 {
 	PHAL_DATA_TYPE hal;
@@ -1890,7 +1892,8 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		break;
 	case HW_VAR_H2C_INACTIVE_IPS:
 #ifdef CONFIG_WOWLAN
-		rtl8821c_set_fw_pwrmode_inips_cmd_wowlan(adapter, *val);
+    rtl8821c_set_fw_pwrmode_inips_cmd_wowlan(adapter, *val);
+    break;
 #endif /* CONFIG_WOWLAN */
 #ifdef CONFIG_WOWLAN
 	case HW_VAR_VENDOR_WOW_MODE:
