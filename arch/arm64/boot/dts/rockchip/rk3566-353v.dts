@@ -997,13 +997,13 @@
 &i2c0 {
 	status = "okay";
 
-	cw2015@62 { 
+	/*cw2015@62 { 
 	  compatible = "cellwise,cw2015";
 	  reg = <0x62>;
-	 };
+	 };*/
 
-	vdd_cpu: tcs4525@40 {
-		compatible = "tcs,tcs452x";
+	vdd_cpu: regulator@40 {
+		compatible = "fcs,fan53555";
 		reg = <0x40>;
 		vin-supply = <&vccsys>;
 		regulator-compatible = "fan53555-reg";
@@ -1024,7 +1024,7 @@
 		compatible = "rockchip,rk817";
 		reg = <0x20>;
 		interrupt-parent = <&gpio0>;
-		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <RK_PA3 IRQ_TYPE_LEVEL_LOW>;
 
 		pinctrl-names = "default", "pmic-sleep",
 				"pmic-power-off", "pmic-reset";
@@ -1502,6 +1502,18 @@
 };
 
 &cpu0 {
+	cpu-supply = <&vdd_cpu>;
+};
+
+&cpu1 {
+	cpu-supply = <&vdd_cpu>;
+};
+
+&cpu2 {
+	cpu-supply = <&vdd_cpu>;
+};
+
+&cpu3 {
 	cpu-supply = <&vdd_cpu>;
 };
 
