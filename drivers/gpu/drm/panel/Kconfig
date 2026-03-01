@@ -1,4 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0-only
+config DRM_PANEL_NEWVISION_NV3051D
+	tristate "NewVision NV3051D MIPI DSI panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Support for NewVision NV3051D based MIPI-DSI panels
+	  used in Anbernic RG353P and RG353V.
+
 config DRM_PANEL
 	bool
 	depends on DRM

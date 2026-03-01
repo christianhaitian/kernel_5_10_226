@@ -16,7 +16,7 @@
 #include "rk3568-linux.dtsi"
 / {
 	model = "Anbernic RG353V and RG353VS with v1 display at 60HZ";
-	compatible = "rockchip,rk3566-evb2-lp4x-v11", "rockchip,rk3566";
+	compatible = "anbernic,rg353v", "rockchip,rk3566";
 
 	audiopwmout_diff: audiopwmout-diff {
 		status = "disabled";
@@ -36,6 +36,7 @@
 
 	backlight: backlight {
 		compatible = "pwm-backlight";
+		power-supply = <&vcc3v3_lcd0_n>;
 		pwms = <&pwm4 0 25000 0>;
 		brightness-levels = <
 			  0   1   2   3   4   5   6   7
@@ -542,12 +543,16 @@
  * mipi_dphy0 needs to be enabled
  * when dsi0 is enabled
  */
+&mipi_dphy0 {
+    status = "okay";
+};
+
 &dsi0 {
 	status = "okay";
 	//rockchip,lane-rate = <1000>;
 	dsi0_panel: panel@0 {
 		status = "okay";
-		compatible = "elida,kd35t133", "simple-panel-dsi";
+		compatible = "anbernic,rg353p-panel", "newvision,nv3051d";
 		reg = <0>;
 		num = <0>;
 		id = [30 52];
@@ -555,7 +560,7 @@
 		backlight = <&backlight>;
 		//power-supply = <&vcc_lcd>;
 		//gpio = <&gpio0 RK_PC2 GPIO_ACTIVE_HIGH>;
-		//reset-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
 		reset-delay-ms = <150>;
 		init-delay-ms = <20>; 
 		enable-delay-ms = <120>;
@@ -799,7 +804,7 @@
 
 	dsi0_panel2: panel@1 {
 		status = "okay";
-		compatible = "elida,kd35t133", "simple-panel-dsi";
+		compatible = "anbernic,rg353p-panel", "newvision,nv3051d";
 		/* prevent registering this panel */
 		//reg = <0>; 
 		num = <1>;
@@ -808,7 +813,7 @@
 		backlight = <&backlight>;
 		//power-supply = <&vcc_lcd>;
 		//gpio = <&gpio0 RK_PC2 GPIO_ACTIVE_HIGH>;
-		//reset-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
 		reset-delay-ms = <150>;
 		init-delay-ms = <20>;
 		enable-delay-ms = <120>;
@@ -896,14 +901,14 @@
 };
 
 &dsi0_panel {
-	power-supply = <&vcc3v3_lcd0_n>;
+	vdd-supply = <&vcc3v3_lcd0_n>;
 	reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&lcd0_rst_gpio>;
 };
 
 &dsi0_panel2 {
-	power-supply = <&vcc3v3_lcd0_n>;
+	vdd-supply = <&vcc3v3_lcd0_n>;
 	reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&lcd0_rst_gpio>;

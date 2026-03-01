@@ -1023,6 +1023,8 @@ static int dw_mipi_dsi_rockchip_bind(struct device *dev,
 	struct device *second;
 	int ret;
 
+	dev_info(dev, "rockchip DSI bind for %pOF\n", dev->of_node);
+
 	second = dw_mipi_dsi_rockchip_find_second(dsi);
 	if (IS_ERR(second))
 		return PTR_ERR(second);
@@ -1142,6 +1144,8 @@ static int dw_mipi_dsi_rockchip_probe(struct platform_device *pdev)
 	const struct rockchip_dw_dsi_chip_data *cdata =
 				of_device_get_match_data(dev);
 	int ret, i;
+
+	dev_info(dev, "rockchip DW-MIPI-DSI probe() called\n");
 
 	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
 	if (!dsi)
