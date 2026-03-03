@@ -238,7 +238,7 @@
 
 		vol-up-key {
 			label = "volume up";
-			linux,code = <KEY_F>;
+			linux,code = <BTN_MODE>;
 			press-threshold-microvolt = <1750>;
 		};
 	};
