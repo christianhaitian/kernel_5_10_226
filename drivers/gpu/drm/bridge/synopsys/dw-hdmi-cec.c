@@ -298,7 +298,7 @@ static irqreturn_t dw_hdmi_cec_wake_thread(int irq, void *data)
 
 static int rockchip_hdmi_cec_input_init(struct dw_hdmi_cec *cec)
 {
-	int err;
+	/*int err;
 
 	cec->devinput = devm_input_allocate_device(cec->dev);
 	if (!cec->devinput)
@@ -316,7 +316,7 @@ static int rockchip_hdmi_cec_input_init(struct dw_hdmi_cec *cec)
 		input_free_device(cec->devinput);
 		return err;
 	}
-	input_set_capability(cec->devinput, EV_KEY, KEY_POWER);
+	input_set_capability(cec->devinput, EV_KEY, KEY_POWER);*/
 
 	return 0;
 }
