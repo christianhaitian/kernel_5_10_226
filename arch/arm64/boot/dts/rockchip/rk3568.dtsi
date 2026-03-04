@@ -376,14 +376,18 @@
 		#size-cells = <2>;
 		ranges;
 
-		drm_logo: drm-logo@00000000 {
+		/* Pre-boot logo buffer passed from U-Boot to kernel/DRM */
+		drm_logo: drm-logo@0x3f000000 {
 			compatible = "rockchip,drm-logo";
-			reg = <0x0 0x0 0x0 0x0>;
+			reg = <0x0 0x3f000000 0x0 0x00800000>; /* 8 MiB */
+			no-map;
 		};
 
-		drm_cubic_lut: drm-cubic-lut@00000000 {
+		/* Optional: Rockchip cubic LUT (color correction), keep small */
+		drm_cubic_lut: drm-cubic-lut@0x3f800000 {
 			compatible = "rockchip,drm-cubic-lut";
-			reg = <0x0 0x0 0x0 0x0>;
+			reg = <0x0 0x3f800000 0x0 0x00040000>; /* 256 KiB */
+			no-map;
 		};
 	};
 
