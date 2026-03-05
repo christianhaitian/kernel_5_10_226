@@ -1457,6 +1457,7 @@ static int rk817_suspend(struct snd_soc_component *component)
 	snd_soc_component_force_bias_level(component, SND_SOC_BIAS_OFF);
 	snd_soc_component_disable_pin(component, "Playback");
 	snd_soc_component_disable_pin(component, "Capture");
+	snd_soc_dapm_disable_pin(&component->dapm, "DAC");
 	return 0;
 }
 
