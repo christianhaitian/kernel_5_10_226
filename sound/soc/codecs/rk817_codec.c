@@ -1,3 +1,4 @@
+/* rk817: force DAPM sync after path switches to avoid stuck routes */
 /*
  * Copyright (c) 2018 Rockchip Electronics Co. Ltd.
  *
