@@ -852,6 +852,7 @@ static int rk817_playback_path_put(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
 	struct rk817_codec_priv *rk817 = snd_soc_component_get_drvdata(component);
+	int ret;
 
 	if (rk817->playback_path == ucontrol->value.integer.value[0]) {
 		DBG("%s : playback_path is not changed!\n",
@@ -859,8 +860,12 @@ static int rk817_playback_path_put(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 
-	return rk817_playback_path_config(component, rk817->playback_path,
-					  ucontrol->value.integer.value[0]);
+	ret = rk817_playback_path_config(component, rk817->playback_path,
+					 ucontrol->value.integer.value[0]);
+	if (!ret) 
+		snd_soc_dapm_sync(snd_soc_component_get_dapm(component));
+
+	return ret;
 }
 
 static int rk817_capture_path_config(struct snd_soc_component *component,
