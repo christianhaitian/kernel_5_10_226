@@ -1,4 +1,3 @@
-/* rk817: force DAPM sync after path switches to avoid stuck routes */
 /*
  * Copyright (c) 2018 Rockchip Electronics Co. Ltd.
  *
@@ -69,6 +68,8 @@
 
 #define RK817_DAC_VOL_MIN 3
 #define RK817_DAC_VOL_MAX 255
+
+//static void rk817_dapm_force_sync(struct snd_soc_component *component);
 
 #if defined(CONFIG_RK817_HEADSET)
 struct rk817_codec_priv {
@@ -848,6 +849,16 @@ static int rk817_playback_path_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+/*static void rk817_dapm_force_sync(struct snd_soc_component *component)
+{
+	struct snd_soc_dapm_context *dapm =
+		snd_soc_component_get_dapm(component);
+
+	snd_soc_dapm_mutex_lock(dapm);
+	snd_soc_dapm_sync(dapm);
+	snd_soc_dapm_mutex_unlock(dapm);
+}*/
+
 static int rk817_playback_path_put(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
@@ -1442,21 +1453,27 @@ static struct snd_soc_dai_driver rk817_dai[] = {
 
 static int rk817_suspend(struct snd_soc_component *component)
 {
-	rk817_codec_power_down(component, RK817_CODEC_ALL);
+	/* Let ASoC/DAPM manage power; avoids resume I2C deadlocks */
+	snd_soc_component_force_bias_level(component, SND_SOC_BIAS_OFF);
+	snd_soc_component_disable_pin(component, "Playback");
+	snd_soc_component_disable_pin(component, "Capture");
 	return 0;
 }
 
 static int rk817_resume(struct snd_soc_component *component)
 {
-	struct rk817_codec_priv *rk817 = snd_soc_component_get_drvdata(component);
+	/*struct rk817_codec_priv *rk817 = snd_soc_component_get_drvdata(component);
 
 	if (rk817->resume_path) {
 		if (rk817->capture_path != MIC_OFF)
 			rk817_capture_path_config(component, OFF, rk817->capture_path);
+
 		if (rk817->playback_path != OFF)
 			rk817_playback_path_config(component, OFF, rk817->playback_path);
 	}
 
+	rk817_dapm_force_sync(component);*/
+	snd_soc_component_force_bias_level(component, SND_SOC_BIAS_STANDBY);
 	return 0;
 }
 
