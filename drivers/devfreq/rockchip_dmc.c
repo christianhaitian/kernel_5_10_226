@@ -1178,6 +1178,11 @@ static __maybe_unused int rockchip_get_freq_info(struct rockchip_dmcfreq *dmcfre
 	unsigned long rate;
 	int i, j, count, ret = 0;
 
+for (i = 0; i < dmcfreq->freq_count; i++)
+    dev_info(dmcfreq->dev,
+             "ATF DDR freq[%d] = %lu\n",
+             i, dmcfreq->freq_info_rate[i]);
+
 	res = sip_smc_dram(SHARE_PAGE_TYPE_DDR, 0,
 			   ROCKCHIP_SIP_CONFIG_DRAM_GET_FREQ_INFO);
 	if (res.a0) {
@@ -1882,20 +1887,23 @@ static __maybe_unused int rk3568_dmc_init(struct platform_device *pdev,
 	wait_ctrl.wait_en = 1;
 	wait_ctrl.wait_time_out_ms = 17 * 5;
 
+	dev_info(&pdev->dev, "rk3568_dmc_init: start\n");
 	complt_irq = platform_get_irq_byname(pdev, "complete");
 	if (complt_irq < 0) {
-		dev_err(&pdev->dev, "no IRQ for complt_irq: %d\n",
+		dev_err(&pdev->dev, "rk3568_dmc_init: get irq 'complete' failed: %d\n",
 			complt_irq);
 		return complt_irq;
 	}
+	dev_info(&pdev->dev, "rk3568_dmc_init: irq ok: %d\n", complt_irq);
 	wait_ctrl.complt_irq = complt_irq;
 
 	ret = devm_request_irq(&pdev->dev, complt_irq, wait_dcf_complete_irq,
 			       0, dev_name(&pdev->dev), &wait_ctrl);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "cannot request complt_irq\n");
+		dev_err(&pdev->dev, "rk3568_dmc_init: some_call failed: %d\n", ret);
 		return ret;
 	}
+	dev_info(&pdev->dev, "rk3568_dmc_init: some_call ok\n");
 	disable_irq(complt_irq);
 
 	res = sip_smc_dram(SHARE_PAGE_TYPE_DDR, 0,
@@ -3088,6 +3096,7 @@ static int rockchip_dmcfreq_add_devfreq(struct rockchip_dmcfreq *dmcfreq)
 	struct dev_pm_opp *opp;
 	struct devfreq *devfreq;
 	unsigned long opp_rate = dmcfreq->rate;
+	int ret;
 
 	opp = devfreq_recommended_opp(dev, &opp_rate, 0);
 	if (IS_ERR(opp)) {
@@ -3100,8 +3109,9 @@ static int rockchip_dmcfreq_add_devfreq(struct rockchip_dmcfreq *dmcfreq)
 	devfreq = devm_devfreq_add_device(dev, devp, "dmc_ondemand",
 					  &dmcfreq->ondemand_data);
 	if (IS_ERR(devfreq)) {
-		dev_err(dev, "failed to add devfreq\n");
-		return PTR_ERR(devfreq);
+		ret = PTR_ERR(devfreq);
+		dev_err(dev, "add_devfreq: devm_devfreq_add_device failed: %d\n", ret);
+		return ret;
 	}
 
 	devm_devfreq_register_opp_notifier(dev, devfreq);
@@ -3405,22 +3415,45 @@ static int rockchip_dmcfreq_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&data->video_info_list);
 
 	ret = rockchip_dmcfreq_get_event(data);
-	if (ret)
-		return ret;
+	if (ret) {
+		dev_err(dev, "probe: get_event failed: %d\n", ret);
+ 		return ret;
+	}
+	dev_info(dev, "probe: get_event ok\n");
 
 	ret = rockchip_dmcfreq_power_control(data);
 	if (ret)
 		return ret;
+	dev_info(dev, "probe: power_control ok\n");
 
-	ret = rockchip_init_opp_table(dev, NULL, "ddr_leakage", "center");
+ret = rockchip_init_opp_table(dev, NULL, "ddr_leakage", "center");
+if (ret)
+	dev_warn(dev, "probe: rockchip_init_opp_table failed: %d, continuing without leakage adjust\n",
+		 ret);
+else
+	dev_info(dev, "probe: rockchip_init_opp_table ok\n");
+ret = dev_pm_opp_get_opp_count(dev);
+dev_info(dev, "probe: opp_count after init=%d\n", ret);
+if (ret <= 0) {
+	ret = dev_pm_opp_of_add_table(dev);
 	if (ret)
-		return ret;
+		dev_err(dev, "probe: dev_pm_opp_of_add_table failed: %d\n", ret);
+	else
+		dev_info(dev, "probe: dev_pm_opp_of_add_table ok\n");
+}
+
+dev_info(dev, "probe: rockchip_init_opp_table ok\n");
 
 	ret = rockchip_dmcfreq_dmc_init(pdev, data);
-	if (ret)
-		return ret;
+	if (ret) {
+		dev_err(dev, "probe: dmc_init failed: %d\n", ret);
+ 		return ret;
+	}
+	dev_info(dev, "probe: dmc_init ok\n");
 
 	rockchip_dmcfreq_parse_dt(data);
+	dev_info(dev, "probe: parse_dt ok, system_status_en=%u auto_freq_en=%u rate=%lu\n",
+		 data->system_status_en, data->info.auto_freq_en, data->rate);
 
 	platform_set_drvdata(pdev, data);
 
@@ -3433,16 +3466,25 @@ static int rockchip_dmcfreq_probe(struct platform_device *pdev)
 	cpu_latency_qos_add_request(&pm_qos, PM_QOS_DEFAULT_VALUE);
 
 	ret = devfreq_add_governor(&devfreq_dmc_ondemand);
-	if (ret)
-		return ret;
+	if (ret) {
+		dev_err(dev, "probe: devfreq_add_governor failed: %d\n", ret);
+ 		return ret;
+	}
+	dev_info(dev, "probe: devfreq_add_governor ok\n");
+
 	ret = rockchip_dmcfreq_enable_event(data);
-	if (ret)
-		return ret;
+	if (ret) {
+		dev_err(dev, "probe: enable_event failed: %d\n", ret);
+ 		return ret;
+	}
+	dev_info(dev, "probe: enable_event ok\n");
 	ret = rockchip_dmcfreq_add_devfreq(data);
 	if (ret) {
+		dev_err(dev, "probe: add_devfreq failed: %d\n", ret);
 		rockchip_dmcfreq_disable_event(data);
 		return ret;
 	}
+	dev_info(dev, "probe: add_devfreq ok\n");
 
 	rockchip_dmcfreq_register_notifier(data);
 	rockchip_dmcfreq_add_interface(data);

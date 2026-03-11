@@ -435,8 +435,8 @@ static void devfreq_monitor(struct work_struct *work)
 
 	mutex_lock(&devfreq->lock);
 	err = update_devfreq(devfreq);
-	if (err)
-		dev_err(&devfreq->dev, "dvfs failed with (%d) error\n", err);
+	/*if (err)
+		dev_err(&devfreq->dev, "dvfs failed with (%d) error\n", err);*/
 
 	if (devfreq->stop_polling)
 		goto out;

@@ -970,7 +970,9 @@
 
 &gpu {
 	mali-supply = <&vdd_gpu>;
+	mem-supply = <&vdd_gpu>;
 	status = "okay";
+	operating-points-v2 = <&gpu_opp_table>;
 };
 
 &hdmi {
@@ -1108,7 +1110,7 @@
 				regulator-boot-on;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
-				regulator-init-microvolt = <900000>;
+				//regulator-init-microvolt = <900000>;
 				regulator-ramp-delay = <6001>;
 				regulator-initial-mode = <0x2>;
 				regulator-name = "vdd_gpu";
@@ -1527,6 +1529,7 @@
 };
 
 &dmc {
+	operating-points-v2 = <&dmc_opp_table>;
 	center-supply = <&vdd_logic>;
 	status = "okay";
 };

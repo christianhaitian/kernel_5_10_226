@@ -4550,9 +4550,12 @@ int power_control_init(struct kbase_device *kbdev)
 #endif /* CONFIG_REGULATOR */
 
 #ifdef CONFIG_ARCH_ROCKCHIP
-       err = kbase_platform_rk_init_opp_table(kbdev);
-       if (err)
-               dev_err(kbdev->dev, "Failed to init_opp_table (%d)\n", err);
+	err = kbase_platform_rk_init_opp_table(kbdev);
+	if (err)
+		dev_err(kbdev->dev, "Failed to init_opp_table (%d)\n", err);
+
+	err = dev_pm_opp_of_add_table(kbdev->dev);
+	dev_err(kbdev->dev, "dev_pm_opp_of_add_table returned %d\n", err);
 #else
 	err = dev_pm_opp_of_add_table(kbdev->dev);
 	CSTD_UNUSED(err);
