@@ -2422,7 +2422,7 @@
 			SYS_STATUS_PERFORMANCE  DMC_FREQ_LEVEL_HIGH
 			SYS_STATUS_DUALVIEW     DMC_FREQ_LEVEL_HIGH
 		>;
-		auto-min-freq = <528000>;
+		auto-min-freq = <324000>;
 		auto-freq-en = <1>;
 		#cooling-cells = <2>;
 		status = "disabled";
