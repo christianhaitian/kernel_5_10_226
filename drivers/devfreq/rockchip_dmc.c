@@ -484,6 +484,8 @@ static int rockchip_dmcfreq_opp_helper(struct dev_pm_set_opp_data *data)
 	else
 		ret = clk_set_rate(clk, freq);
 
+	dev_err(dev, "DMC DEBUG: request=%lu old=%lu ret=%d direct=%d\n", freq, old_freq, ret, dmcfreq->is_set_rate_direct);
+
 	rockchip_dmcfreq_write_unlock();
 	if (ret) {
 		dev_err(dev, "%s: failed to set clock rate: %d\n", __func__,
@@ -498,6 +500,7 @@ static int rockchip_dmcfreq_opp_helper(struct dev_pm_set_opp_data *data)
 	 * 2. Ddr frequency scaling successful, we get the rate we set.
 	 */
 	dmcfreq->rate = clk_get_rate(clk);
+	dev_err(dev, "DMC DEBUG: clk_get_rate=%lu requested=%lu\n", dmcfreq->rate, freq);
 
 	/* If get the incorrect rate, set voltage to old value. */
 	if (dmcfreq->rate != freq) {
@@ -561,8 +564,8 @@ static int rockchip_dmcfreq_target(struct device *dev, unsigned long *freq,
 	struct dev_pm_opp *opp;
 	int ret = 0;
 
-	if (!dmc_mdevp.is_checked)
-		return -EINVAL;
+	/*if (!dmc_mdevp.is_checked)
+		return -EINVAL;*/
 
 	opp = devfreq_recommended_opp(dev, freq, flags);
 	if (IS_ERR(opp)) {
@@ -1196,8 +1199,10 @@ for (i = 0; i < dmcfreq->freq_count; i++)
 		return -EPERM;
 	}
 
-	for (i = 0; i < ddr_psci_param->freq_count; i++)
+	for (i = 0; i < ddr_psci_param->freq_count; i++) {
 		dmcfreq->freq_info_rate[i] = ddr_psci_param->freq_info_mhz[i] * 1000000;
+		dev_info(dmcfreq->dev, "ATF DDR freq[%d] = %lu\n", i, dmcfreq->freq_info_rate[i]);
+	}
 	dmcfreq->freq_count = ddr_psci_param->freq_count;
 
 	/* update dmc_opp_table */
