@@ -1215,10 +1215,8 @@ static int rkvenc_init(struct mpp_dev *mpp)
 
 #ifdef CONFIG_PM_DEVFREQ
 	ret = rkvenc_devfreq_init(mpp);
-	if (ret) {
-		mpp_err("failed to add venc devfreq, continuing without devfreq\n");
-		ret = 0;
-	}
+	if (ret)
+		mpp_err("failed to add venc devfreq\n");
 #endif
 
 	/* for mmu pagefault */

@@ -1633,13 +1633,28 @@
 	rkvenc_opp_table: rkvenc-opp-table {
 		compatible = "operating-points-v2";
 
+		nvmem-cells = <&core_pvtm>;
+		nvmem-cell-names = "pvtm";
+		rockchip,pvtm-voltage-sel = <
+			0        84000   0
+			84001    91000   1
+			91001    100000  2
+		>;
+		rockchip,pvtm-ch = <0 5>;
+
 		opp-297000000 {
 			opp-hz = /bits/ 64 <297000000>;
 			opp-microvolt = <900000>;
+			opp-microvolt-L0 = <900000>;
+			opp-microvolt-L1 = <875000>;
+			opp-microvolt-L2 = <875000>;
 		};
 		opp-400000000 {
 			opp-hz = /bits/ 64 <400000000>;
 			opp-microvolt = <950000>;
+			opp-microvolt-L0 = <950000>;
+			opp-microvolt-L1 = <925000>;
+			opp-microvolt-L2 = <900000>;
 		};
 	};
 
@@ -1700,9 +1715,23 @@
 	rkvdec_opp_table: rkvdec-opp-table {
 		compatible = "operating-points-v2";
 
+		nvmem-cells = <&log_leakage>, <&core_pvtm>;
+		nvmem-cell-names = "leakage", "pvtm";
+		rockchip,leakage-voltage-sel = <
+			1   80    0
+			81  254   1
+		>;
+		rockchip,pvtm-voltage-sel = <
+			0        84000   0
+			84001    100000  1
+		>;
+		rockchip,pvtm-ch = <0 5>;
+
 		opp-297000000 {
 			opp-hz = /bits/ 64 <297000000>;
 			opp-microvolt = <900000>;
+			opp-microvolt-L0 = <900000>;
+			opp-microvolt-L1 = <875000>;
 		};
 		opp-400000000 {
 			opp-hz = /bits/ 64 <400000000>;

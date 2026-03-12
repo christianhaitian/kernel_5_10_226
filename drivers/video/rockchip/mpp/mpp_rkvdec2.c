@@ -1037,10 +1037,8 @@ static int rkvdec2_init(struct mpp_dev *mpp)
 		mpp_err("No hevc cabac reset resource define\n");
 
 	ret = rkvdec2_devfreq_init(mpp);
-	if (ret) {
-		mpp_err("failed to add vdec devfreq, continuing without devfreq\n\n");
-		ret = 0;
-	}
+	if (ret)
+		mpp_err("failed to add vdec devfreq\n");
 
 	return ret;
 }
