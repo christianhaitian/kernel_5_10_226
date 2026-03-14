@@ -72,6 +72,7 @@
 			248 249 250 251 252 253 254 255
 		>;
 		default-brightness-level = <200>;
+		status = "disabled";
 	};
 
 	charge-animation {
@@ -548,22 +549,36 @@
 //};
 
 &dsi0 {
-	status = "disabled";
+	status = "okay";
 	//rockchip,lane-rate = <1000>;
 	dsi0_panel: panel@0 {
 		status = "okay";
 		compatible = "simple-panel-oled-dsi";
 		reg = <0>;
 		//backlight = <&backlight>;
+		//power-supply = <&vcc_lcd>;
+		enable-gpios = <&gpio4 RK_PB7 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
+
+		spi-cs-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>;//<&gpio4 RK_PA6 GPIO_ACTIVE_HIGH>;
+		spi-scl-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_HIGH>;     //<&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
+		spi-sdi-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;//<&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd_enable_gpio>, <&lcd_rst_gpio>;
 		reset-delay-ms = <1>;
+		init-delay-ms = <20>; 
 		enable-delay-ms = <120>;
 		prepare-delay-ms = <2>;
 		unprepare-delay-ms = <20>;
 		disable-delay-ms = <50>;
-		dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |
-			MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET)>;
+		dsi,flags = <(MIPI_DSI_MODE_VIDEO           |
+			      MIPI_DSI_MODE_VIDEO_BURST     |
+			      MIPI_DSI_MODE_LPM             |
+			      MIPI_DSI_MODE_EOT_PACKET)>;
 		dsi,format = <MIPI_DSI_FMT_RGB888>;
 		dsi,lanes  = <2>;
+		rockchip,cmd-type = "spi";
 		panel-init-sequence = [
 			15 00 03 F0 5A 5A
 			15 00 03 F1 5A 5A 
@@ -1554,12 +1569,10 @@
 
 	touch {
 		touch_gpio: touch-gpio {
-		   rockchip,pins = <4 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up>;
-		     
+			rockchip,pins =
+				<0 RK_PB5 RK_FUNC_GPIO &pcfg_pull_up>,
+				<0 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-		touch_gt_gpio: touch-gt-gpio {
-		   rockchip,pins = <4 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;    
-		}; 
 	};
 
 	vcc-sd {

@@ -348,6 +348,8 @@ static void rockchip_panel_write_spi_exit_buffer(struct panel_simple *panel)
 	
 //	mdelay(150);
 	
+	dev_info(panel->base.dev, "sending SPI exit buffer\n");
+	
 	for (m = 0; m < 4; m++) {	
 		//dm_gpio_set_value(&priv->spi_cs_gpio, 0);
 		gpiod_direction_output(panel->spi_cs_gpio, 0);
@@ -435,6 +437,8 @@ static void rockchip_panel_write_spi_init_buffer(struct panel_simple *panel)
 	
 	mdelay(50);
 	
+	dev_info(panel->base.dev, "sending SPI init buffer\n");
+	
 	for (m = 0; m < 30; m++) {	
 		//dm_gpio_set_value(&priv->spi_cs_gpio, 0);
 		gpiod_direction_output(panel->spi_cs_gpio, 0);
@@ -478,7 +482,7 @@ static void rockchip_panel_write_spi_init_buffer(struct panel_simple *panel)
 		mdelay(1);
 	}
 //	mdelay(150);
-		
+	dev_info(panel->base.dev, "rockchip_panel_write_spi_init_buffer()\n");
 }
 
 #if IS_ENABLED(CONFIG_DRM_MIPI_DSI)
@@ -489,6 +493,8 @@ static int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
 	struct mipi_dsi_device *dsi = panel->dsi;
 	unsigned int i;
 	int err;
+
+	dev_info(panel->base.dev, "sending %u DSI cmds\n", seq->cmd_cnt);
 
 	if (!seq)
 		return -EINVAL;
@@ -643,32 +649,31 @@ static int panel_simple_disable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 	int err = 0;
+
 	if (!p->enabled)
 		return 0;
 
-	backlight_disable(p->backlight);
+	if (p->backlight)
+		backlight_disable(p->backlight);
 
 	if (p->desc->delay.disable)
 		panel_simple_sleep(p->desc->delay.disable);
 
-	if (p->cmd_type == CMD_TYPE_MCU) {
-		err = panel_simple_xfer_mcu_cmd_seq(p, p->desc->exit_seq);
-		if (err)
-			dev_err(panel->dev, "failed to send exit cmds seq\n");
-	}
-	
-	if (p->cmd_type == CMD_TYPE_SPI) {	
-		if (p->desc->exit_seq) {
-			if (0)
-				panel_simple_xfer_dsi_cmd_seq(p, p->desc->exit_seq);
-			else if (p->cmd_type == CMD_TYPE_SPI)
-				rockchip_panel_write_spi_exit_buffer(p);
-			if (err)
-				dev_err(panel->dev, "failed to send exit cmds seq\n");
+	if (p->desc->exit_seq) {
+		if (p->cmd_type == CMD_TYPE_SPI) {
+			dev_info(panel->dev, "sending SPI exit buffer\n");
+			rockchip_panel_write_spi_exit_buffer(p);
+		} else if (p->cmd_type == CMD_TYPE_MCU) {
+			err = panel_simple_xfer_mcu_cmd_seq(p, p->desc->exit_seq);
+		} else if (p->dsi) {
+			err = panel_simple_xfer_dsi_cmd_seq(p, p->desc->exit_seq);
 		}
-	}
-	p->enabled = false;
 
+		if (err)
+			dev_err(panel->dev, "failed to send exit cmds seq: %d\n", err);
+	}
+
+	p->enabled = false;
 	return 0;
 }
 
@@ -699,43 +704,58 @@ static int panel_simple_unprepare(struct drm_panel *panel)
 static int panel_simple_prepare(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
-	int err;
+	int err = 0;
+
+	dev_info(panel->dev, "prepare: dsi=%p cmd_type=%d init_seq=%p\n",
+		 p->dsi, p->cmd_type, p->desc->init_seq);
 
 	if (p->prepared)
 		return 0;
-//printk("panel_simple_prepare  \n");
+
 	err = panel_simple_regulator_enable(p);
 	if (err < 0) {
 		dev_err(panel->dev, "failed to enable supply: %d\n", err);
 		return err;
 	}
 
-	gpiod_direction_output(p->enable_gpio, 1);
+	if (p->enable_gpio)
+		gpiod_direction_output(p->enable_gpio, 1);
 
 	if (p->desc->delay.prepare)
 		panel_simple_sleep(p->desc->delay.prepare);
 
-	gpiod_direction_output(p->reset_gpio, 1);
+	/*
+	 * RG503 panel reset is ACTIVE_LOW in DT.
+	 * Assert reset, wait, then deassert and wait again.
+	 */
+	if (p->reset_gpio) {
+		gpiod_direction_output(p->reset_gpio, 1);
+		msleep(20);
+		gpiod_set_value_cansleep(p->reset_gpio, 0);
+		msleep(120);
+	}
 
 	if (p->desc->delay.reset)
 		panel_simple_sleep(p->desc->delay.reset);
-
-	gpiod_direction_output(p->reset_gpio, 0);
 
 	if (p->desc->delay.init)
 		panel_simple_sleep(p->desc->delay.init);
 
 	if (p->desc->init_seq) {
-		if (0)
-			panel_simple_xfer_dsi_cmd_seq(p, p->desc->init_seq);
-		else if (p->cmd_type == CMD_TYPE_SPI)
+		if (p->cmd_type == CMD_TYPE_SPI) {
+			dev_info(panel->dev, "sending SPI init buffer\n");
 			rockchip_panel_write_spi_init_buffer(p);
+		} else if (p->cmd_type == CMD_TYPE_MCU) {
+			err = panel_simple_xfer_mcu_cmd_seq(p, p->desc->init_seq);
+		} else if (p->dsi) {
+			err = panel_simple_xfer_dsi_cmd_seq(p, p->desc->init_seq);
+		}
+
 		if (err)
-			dev_err(panel->dev, "failed to send init cmds seq\n");
+			dev_err(panel->dev, "failed to send init cmds seq: %d\n", err);
 	}
 
 	p->prepared = true;
-
 	return 0;
 }
 
