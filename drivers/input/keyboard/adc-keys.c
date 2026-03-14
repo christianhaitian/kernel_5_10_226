@@ -12,14 +12,13 @@
 #include <linux/iio/consumer.h>
 #include <linux/iio/types.h>
 #include <linux/input.h>
-#include <linux/jiffies.h>
+#include <linux/input-polldev.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/property.h>
 #include <linux/slab.h>
-#include <linux/workqueue.h>
 
 struct adc_keys_button {
 	u32 voltage;
@@ -32,19 +31,17 @@ struct adc_keys_state {
 	u32 last_key;
 	u32 keyup_voltage;
 	const struct adc_keys_button *map;
-	struct delayed_work work;
-	u32 poll_interval;
 };
 
 extern void rk_send_key_f_key_up(void);
 extern void rk_send_key_f_key_down(void);
 
-static void adc_keys_scan(struct adc_keys_state *st)
+static void adc_keys_poll(struct input_polled_dev *dev)
 {
+	struct adc_keys_state *st = dev->private;
 	int i, value, ret;
 	u32 diff, closest = 0xffffffff;
 	u32 keycode = 0;
-	bool was_mode, is_mode;
 
 	ret = iio_read_channel_processed(st->channel, &value);
 	if (unlikely(ret < 0)) {
@@ -63,26 +60,22 @@ static void adc_keys_scan(struct adc_keys_state *st)
 	if (abs(st->keyup_voltage - value) < closest)
 		keycode = 0;
 
-	was_mode = (st->last_key == BTN_MODE);
-	is_mode = (keycode == BTN_MODE);
+	if (st->last_key && st->last_key != keycode) {
+		if (st->last_key == BTN_MODE)
+			rk_send_key_f_key_down();
+		else
+			input_report_key(dev->input, st->last_key, 0);
+	}
 
-	if (was_mode && !is_mode)
-		rk_send_key_f_key_down();
+	if (keycode) {
+		if (keycode == BTN_MODE)
+			rk_send_key_f_key_up();
+		else
+			input_report_key(dev->input, keycode, 1);
+	}
 
-	if (!was_mode && is_mode)
-		rk_send_key_f_key_up();
-
+	input_sync(dev->input);
 	st->last_key = keycode;
-}
-
-static void adc_keys_work(struct work_struct *work)
-{
-	struct adc_keys_state *st =
-		container_of(to_delayed_work(work), struct adc_keys_state, work);
-
-	adc_keys_scan(st);
-	schedule_delayed_work(&st->work,
-				      msecs_to_jiffies(st->poll_interval));
 }
 
 static int adc_keys_load_keymap(struct device *dev, struct adc_keys_state *st)
@@ -129,8 +122,10 @@ static int adc_keys_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct adc_keys_state *st;
+	struct input_polled_dev *poll_dev;
+	struct input_dev *input;
 	enum iio_chan_type type;
-	int value;
+	int i, value;
 	int error;
 
 	st = devm_kzalloc(dev, sizeof(*st), GFP_KERNEL);
@@ -164,23 +159,42 @@ static int adc_keys_probe(struct platform_device *pdev)
 	if (error)
 		return error;
 
+	poll_dev = devm_input_allocate_polled_device(dev);
+	if (!poll_dev) {
+		dev_err(dev, "failed to allocate input device\n");
+		return -ENOMEM;
+	}
+
 	if (!device_property_read_u32(dev, "poll-interval", &value))
-		st->poll_interval = value;
-	else
-		st->poll_interval = 100;
+		poll_dev->poll_interval = value;
 
-	INIT_DELAYED_WORK(&st->work, adc_keys_work);
-	platform_set_drvdata(pdev, st);
-	schedule_delayed_work(&st->work, msecs_to_jiffies(st->poll_interval));
+	poll_dev->poll = adc_keys_poll;
+	poll_dev->private = st;
 
-	return 0;
-}
+	input = poll_dev->input;
 
-static int adc_keys_remove(struct platform_device *pdev)
-{
-	struct adc_keys_state *st = platform_get_drvdata(pdev);
+	input->name = pdev->name;
+	input->phys = "adc-keys/input0";
 
-	cancel_delayed_work_sync(&st->work);
+	input->id.bustype = BUS_HOST;
+	input->id.vendor = 0x0001;
+	input->id.product = 0x0001;
+	input->id.version = 0x0100;
+
+	__set_bit(EV_KEY, input->evbit);
+	for (i = 0; i < st->num_keys; i++)
+		if (st->map[i].keycode != BTN_MODE)
+			__set_bit(st->map[i].keycode, input->keybit);
+
+	if (device_property_read_bool(dev, "autorepeat"))
+		__set_bit(EV_REP, input->evbit);
+
+	error = input_register_polled_device(poll_dev);
+	if (error) {
+		dev_err(dev, "Unable to register input device: %d\n", error);
+		return error;
+	}
+
 	return 0;
 }
 
@@ -198,7 +212,6 @@ static struct platform_driver __refdata adc_keys_driver = {
 		.of_match_table = of_match_ptr(adc_keys_of_match),
 	},
 	.probe = adc_keys_probe,
-	.remove = adc_keys_remove,
 };
 module_platform_driver(adc_keys_driver);
 
