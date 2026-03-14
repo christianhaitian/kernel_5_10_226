@@ -484,7 +484,7 @@ static int rockchip_dmcfreq_opp_helper(struct dev_pm_set_opp_data *data)
 	else
 		ret = clk_set_rate(clk, freq);
 
-	dev_err(dev, "DMC DEBUG: request=%lu old=%lu ret=%d direct=%d\n", freq, old_freq, ret, dmcfreq->is_set_rate_direct);
+	//dev_err(dev, "DMC DEBUG: request=%lu old=%lu ret=%d direct=%d\n", freq, old_freq, ret, dmcfreq->is_set_rate_direct);
 
 	rockchip_dmcfreq_write_unlock();
 	if (ret) {
@@ -500,7 +500,7 @@ static int rockchip_dmcfreq_opp_helper(struct dev_pm_set_opp_data *data)
 	 * 2. Ddr frequency scaling successful, we get the rate we set.
 	 */
 	dmcfreq->rate = clk_get_rate(clk);
-	dev_err(dev, "DMC DEBUG: clk_get_rate=%lu requested=%lu\n", dmcfreq->rate, freq);
+	//dev_err(dev, "DMC DEBUG: clk_get_rate=%lu requested=%lu\n", dmcfreq->rate, freq);
 
 	/* If get the incorrect rate, set voltage to old value. */
 	if (dmcfreq->rate != freq) {

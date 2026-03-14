@@ -343,57 +343,45 @@ int cmd_exit_code[4][32]={
 
 static void rockchip_panel_write_spi_exit_buffer(struct panel_simple *panel)
 {
-	int i,m,n;
-	int value,value_hl;
-	
-//	mdelay(150);
-	
-	dev_info(panel->base.dev, "sending SPI exit buffer\n");
-	
-	for (m = 0; m < 4; m++) {	
-		//dm_gpio_set_value(&priv->spi_cs_gpio, 0);
-		gpiod_direction_output(panel->spi_cs_gpio, 0);
-			if(cmd_exit_code[m][0]& 0x400){
-				
-				value_hl=32;
-			}else{
-				value_hl=16;
-				
-			}
-		
-			for (n = 0; n < value_hl; n++) {
-				value = cmd_exit_code[m][n];
-				if (value & 0x200)
-				{
-					mdelay(value & 0xFF);
-					break;
-				};
-				
-				for (i = 0; i < 9; i++) {
-				
-					if (value & 0x100)
-						gpiod_direction_output(panel->spi_sdi_gpio, 1);	
-					//	dm_gpio_set_value(&priv->spi_sdi_gpio, 1);
-					else
-						gpiod_direction_output(panel->spi_sdi_gpio, 0);	
-					//	dm_gpio_set_value(&priv->spi_sdi_gpio, 0);
+	int i, m, n;
+	int value, value_hl;
 
-					gpiod_direction_output(panel->spi_scl_gpio, 0);	
-				//	dm_gpio_set_value(&priv->spi_scl_gpio, 0);
-					udelay(10);
-					gpiod_direction_output(panel->spi_scl_gpio, 1);	
-				//	dm_gpio_set_value(&priv->spi_scl_gpio, 1);
-					value <<= 1;
-					udelay(10);
-				}
-				
+	if (!panel->spi_cs_gpio || !panel->spi_scl_gpio || !panel->spi_sdi_gpio) {
+		dev_warn(panel->base.dev, "missing SPI GPIOs, skipping SPI exit buffer\n");
+		return;
+	}
+
+	for (m = 0; m < 4; m++) {
+		gpiod_set_value_cansleep(panel->spi_cs_gpio, 0);
+		udelay(5);
+
+		if (cmd_exit_code[m][0] & 0x400)
+			value_hl = 32;
+		else
+			value_hl = 16;
+
+		for (n = 0; n < value_hl; n++) {
+			value = cmd_exit_code[m][n];
+			if (value & 0x200) {
+				mdelay(value & 0xFF);
+				break;
 			}
-		gpiod_direction_output(panel->spi_cs_gpio, 1);	
-		//dm_gpio_set_value(&priv->spi_cs_gpio, 1);
+
+			for (i = 0; i < 9; i++) {
+				gpiod_set_value_cansleep(panel->spi_sdi_gpio,
+							!!(value & 0x100));
+				udelay(5);
+				gpiod_set_value_cansleep(panel->spi_scl_gpio, 0);
+				udelay(5);
+				gpiod_set_value_cansleep(panel->spi_scl_gpio, 1);
+				udelay(5);
+				value <<= 1;
+			}
+		}
+
+		gpiod_set_value_cansleep(panel->spi_cs_gpio, 1);
 		mdelay(1);
 	}
-//	mdelay(50);
-		
 }
 
 
@@ -432,57 +420,48 @@ int cmd_init_code[30][32]={
 
 static void rockchip_panel_write_spi_init_buffer(struct panel_simple *panel)
 {
-	int i,m,n;
-	int value,value_hl;
-	
-	mdelay(50);
-	
-	dev_info(panel->base.dev, "sending SPI init buffer\n");
-	
-	for (m = 0; m < 30; m++) {	
-		//dm_gpio_set_value(&priv->spi_cs_gpio, 0);
-		gpiod_direction_output(panel->spi_cs_gpio, 0);
-			if(cmd_init_code[m][0]& 0x400){
-				
-				value_hl=32;
-			}else{
-				value_hl=16;
-				
-			}
-		
-			for (n = 0; n < value_hl; n++) {
-				value = cmd_init_code[m][n];
-				if (value & 0x200)
-				{
-					mdelay(value & 0xFF);
-					break;
-				};
-				
-				for (i = 0; i < 9; i++) {
-				
-					if (value & 0x100)
-						gpiod_direction_output(panel->spi_sdi_gpio, 1);	
-					//	dm_gpio_set_value(&priv->spi_sdi_gpio, 1);
-					else
-						gpiod_direction_output(panel->spi_sdi_gpio, 0);	
-					//	dm_gpio_set_value(&priv->spi_sdi_gpio, 0);
+	int i, m, n;
+	int value, value_hl;
 
-					gpiod_direction_output(panel->spi_scl_gpio, 0);	
-				//	dm_gpio_set_value(&priv->spi_scl_gpio, 0);
-				//	udelay(10);
-					gpiod_direction_output(panel->spi_scl_gpio, 1);	
-				//	dm_gpio_set_value(&priv->spi_scl_gpio, 1);
-					value <<= 1;
-				//	udelay(10);
-				}
-				
+	if (!panel->spi_cs_gpio || !panel->spi_scl_gpio || !panel->spi_sdi_gpio) {
+		dev_warn(panel->base.dev, "missing SPI GPIOs, skipping SPI init buffer\n");
+		return;
+	}
+
+	dev_info(panel->base.dev, "sending SPI init buffer\n");
+	mdelay(50);
+
+	for (m = 0; m < 30; m++) {
+		gpiod_set_value_cansleep(panel->spi_cs_gpio, 0);
+		udelay(5);
+
+		if (cmd_init_code[m][0] & 0x400)
+			value_hl = 32;
+		else
+			value_hl = 16;
+
+		for (n = 0; n < value_hl; n++) {
+			value = cmd_init_code[m][n];
+			if (value & 0x200) {
+				mdelay(value & 0xFF);
+				break;
 			}
-		gpiod_direction_output(panel->spi_cs_gpio, 1);	
-		//dm_gpio_set_value(&priv->spi_cs_gpio, 1);
+
+			for (i = 0; i < 9; i++) {
+				gpiod_set_value_cansleep(panel->spi_sdi_gpio,
+							!!(value & 0x100));
+				udelay(5);
+				gpiod_set_value_cansleep(panel->spi_scl_gpio, 0);
+				udelay(5);
+				gpiod_set_value_cansleep(panel->spi_scl_gpio, 1);
+				udelay(5);
+				value <<= 1;
+			}
+		}
+
+		gpiod_set_value_cansleep(panel->spi_cs_gpio, 1);
 		mdelay(1);
 	}
-//	mdelay(150);
-	dev_info(panel->base.dev, "rockchip_panel_write_spi_init_buffer()\n");
 }
 
 #if IS_ENABLED(CONFIG_DRM_MIPI_DSI)
@@ -493,8 +472,6 @@ static int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
 	struct mipi_dsi_device *dsi = panel->dsi;
 	unsigned int i;
 	int err;
-
-	dev_info(panel->base.dev, "sending %u DSI cmds\n", seq->cmd_cnt);
 
 	if (!seq)
 		return -EINVAL;
@@ -649,31 +626,32 @@ static int panel_simple_disable(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 	int err = 0;
-
 	if (!p->enabled)
 		return 0;
 
-	if (p->backlight)
-		backlight_disable(p->backlight);
+	backlight_disable(p->backlight);
 
 	if (p->desc->delay.disable)
 		panel_simple_sleep(p->desc->delay.disable);
 
-	if (p->desc->exit_seq) {
-		if (p->cmd_type == CMD_TYPE_SPI) {
-			dev_info(panel->dev, "sending SPI exit buffer\n");
-			rockchip_panel_write_spi_exit_buffer(p);
-		} else if (p->cmd_type == CMD_TYPE_MCU) {
-			err = panel_simple_xfer_mcu_cmd_seq(p, p->desc->exit_seq);
-		} else if (p->dsi) {
-			err = panel_simple_xfer_dsi_cmd_seq(p, p->desc->exit_seq);
-		}
-
+	if (p->cmd_type == CMD_TYPE_MCU) {
+		err = panel_simple_xfer_mcu_cmd_seq(p, p->desc->exit_seq);
 		if (err)
-			dev_err(panel->dev, "failed to send exit cmds seq: %d\n", err);
+			dev_err(panel->dev, "failed to send exit cmds seq\n");
 	}
-
+	
+	if (p->cmd_type == CMD_TYPE_SPI) {	
+		if (p->desc->exit_seq) {
+			if (0)
+				panel_simple_xfer_dsi_cmd_seq(p, p->desc->exit_seq);
+			else if (p->cmd_type == CMD_TYPE_SPI)
+				rockchip_panel_write_spi_exit_buffer(p);
+			if (err)
+				dev_err(panel->dev, "failed to send exit cmds seq\n");
+		}
+	}
 	p->enabled = false;
+
 	return 0;
 }
 
@@ -704,58 +682,43 @@ static int panel_simple_unprepare(struct drm_panel *panel)
 static int panel_simple_prepare(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
-	int err = 0;
-
-	dev_info(panel->dev, "prepare: dsi=%p cmd_type=%d init_seq=%p\n",
-		 p->dsi, p->cmd_type, p->desc->init_seq);
+	int err;
 
 	if (p->prepared)
 		return 0;
-
+//printk("panel_simple_prepare  \n");
 	err = panel_simple_regulator_enable(p);
 	if (err < 0) {
 		dev_err(panel->dev, "failed to enable supply: %d\n", err);
 		return err;
 	}
 
-	if (p->enable_gpio)
-		gpiod_direction_output(p->enable_gpio, 1);
+	gpiod_direction_output(p->enable_gpio, 1);
 
 	if (p->desc->delay.prepare)
 		panel_simple_sleep(p->desc->delay.prepare);
 
-	/*
-	 * RG503 panel reset is ACTIVE_LOW in DT.
-	 * Assert reset, wait, then deassert and wait again.
-	 */
-	if (p->reset_gpio) {
-		gpiod_direction_output(p->reset_gpio, 1);
-		msleep(20);
-		gpiod_set_value_cansleep(p->reset_gpio, 0);
-		msleep(120);
-	}
+	gpiod_direction_output(p->reset_gpio, 1);
 
 	if (p->desc->delay.reset)
 		panel_simple_sleep(p->desc->delay.reset);
+
+	gpiod_direction_output(p->reset_gpio, 0);
 
 	if (p->desc->delay.init)
 		panel_simple_sleep(p->desc->delay.init);
 
 	if (p->desc->init_seq) {
-		if (p->cmd_type == CMD_TYPE_SPI) {
-			dev_info(panel->dev, "sending SPI init buffer\n");
+		if (0)
+			panel_simple_xfer_dsi_cmd_seq(p, p->desc->init_seq);
+		else if (p->cmd_type == CMD_TYPE_SPI)
 			rockchip_panel_write_spi_init_buffer(p);
-		} else if (p->cmd_type == CMD_TYPE_MCU) {
-			err = panel_simple_xfer_mcu_cmd_seq(p, p->desc->init_seq);
-		} else if (p->dsi) {
-			err = panel_simple_xfer_dsi_cmd_seq(p, p->desc->init_seq);
-		}
-
 		if (err)
-			dev_err(panel->dev, "failed to send init cmds seq: %d\n", err);
+			dev_err(panel->dev, "failed to send init cmds seq\n");
 	}
 
 	p->prepared = true;
+
 	return 0;
 }
 
