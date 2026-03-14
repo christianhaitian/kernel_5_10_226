@@ -1,20 +1,25 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Input driver for resistor ladder connected on ADC
  *
  * Copyright (c) 2016 Alexandre Belloni
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
  */
 
 #include <linux/err.h>
 #include <linux/iio/consumer.h>
 #include <linux/iio/types.h>
 #include <linux/input.h>
+#include <linux/jiffies.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/property.h>
 #include <linux/slab.h>
+#include <linux/workqueue.h>
 
 struct adc_keys_button {
 	u32 voltage;
@@ -27,14 +32,19 @@ struct adc_keys_state {
 	u32 last_key;
 	u32 keyup_voltage;
 	const struct adc_keys_button *map;
+	struct delayed_work work;
+	u32 poll_interval;
 };
 
-static void adc_keys_poll(struct input_dev *input)
+extern void rk_send_key_f_key_up(void);
+extern void rk_send_key_f_key_down(void);
+
+static void adc_keys_scan(struct adc_keys_state *st)
 {
-	struct adc_keys_state *st = input_get_drvdata(input);
 	int i, value, ret;
 	u32 diff, closest = 0xffffffff;
-	int keycode = 0;
+	u32 keycode = 0;
+	bool was_mode, is_mode;
 
 	ret = iio_read_channel_processed(st->channel, &value);
 	if (unlikely(ret < 0)) {
@@ -53,14 +63,26 @@ static void adc_keys_poll(struct input_dev *input)
 	if (abs(st->keyup_voltage - value) < closest)
 		keycode = 0;
 
-	if (st->last_key && st->last_key != keycode)
-		input_report_key(input, st->last_key, 0);
+	was_mode = (st->last_key == BTN_MODE);
+	is_mode = (keycode == BTN_MODE);
 
-	if (keycode)
-		input_report_key(input, keycode, 1);
+	if (was_mode && !is_mode)
+		rk_send_key_f_key_down();
 
-	input_sync(input);
+	if (!was_mode && is_mode)
+		rk_send_key_f_key_up();
+
 	st->last_key = keycode;
+}
+
+static void adc_keys_work(struct work_struct *work)
+{
+	struct adc_keys_state *st =
+		container_of(to_delayed_work(work), struct adc_keys_state, work);
+
+	adc_keys_scan(st);
+	schedule_delayed_work(&st->work,
+				      msecs_to_jiffies(st->poll_interval));
 }
 
 static int adc_keys_load_keymap(struct device *dev, struct adc_keys_state *st)
@@ -107,9 +129,8 @@ static int adc_keys_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct adc_keys_state *st;
-	struct input_dev *input;
 	enum iio_chan_type type;
-	int i, value;
+	int value;
 	int error;
 
 	st = devm_kzalloc(dev, sizeof(*st), GFP_KERNEL);
@@ -143,45 +164,23 @@ static int adc_keys_probe(struct platform_device *pdev)
 	if (error)
 		return error;
 
-	input = devm_input_allocate_device(dev);
-	if (!input) {
-		dev_err(dev, "failed to allocate input device\n");
-		return -ENOMEM;
-	}
-
-	input_set_drvdata(input, st);
-
-	input->name = pdev->name;
-	input->phys = "adc-keys/input0";
-
-	input->id.bustype = BUS_HOST;
-	input->id.vendor = 0x0001;
-	input->id.product = 0x0001;
-	input->id.version = 0x0100;
-
-	__set_bit(EV_KEY, input->evbit);
-	for (i = 0; i < st->num_keys; i++)
-		__set_bit(st->map[i].keycode, input->keybit);
-
-	if (device_property_read_bool(dev, "autorepeat"))
-		__set_bit(EV_REP, input->evbit);
-
-
-	error = input_setup_polling(input, adc_keys_poll);
-	if (error) {
-		dev_err(dev, "Unable to set up polling: %d\n", error);
-		return error;
-	}
-
 	if (!device_property_read_u32(dev, "poll-interval", &value))
-		input_set_poll_interval(input, value);
+		st->poll_interval = value;
+	else
+		st->poll_interval = 100;
 
-	error = input_register_device(input);
-	if (error) {
-		dev_err(dev, "Unable to register input device: %d\n", error);
-		return error;
-	}
+	INIT_DELAYED_WORK(&st->work, adc_keys_work);
+	platform_set_drvdata(pdev, st);
+	schedule_delayed_work(&st->work, msecs_to_jiffies(st->poll_interval));
 
+	return 0;
+}
+
+static int adc_keys_remove(struct platform_device *pdev)
+{
+	struct adc_keys_state *st = platform_get_drvdata(pdev);
+
+	cancel_delayed_work_sync(&st->work);
 	return 0;
 }
 
@@ -199,6 +198,7 @@ static struct platform_driver __refdata adc_keys_driver = {
 		.of_match_table = of_match_ptr(adc_keys_of_match),
 	},
 	.probe = adc_keys_probe,
+	.remove = adc_keys_remove,
 };
 module_platform_driver(adc_keys_driver);
 
