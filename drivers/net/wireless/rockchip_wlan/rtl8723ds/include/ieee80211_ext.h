@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,7 +11,12 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- *****************************************************************************/
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ *
+ ******************************************************************************/
 #ifndef __IEEE80211_EXT_H
 #define __IEEE80211_EXT_H
 
@@ -44,7 +48,6 @@
 #define PMKID_LEN 16
 
 
-#ifdef PLATFORM_LINUX
 struct wpa_ie_hdr {
 	u8 elem_id;
 	u8 len;
@@ -98,8 +101,6 @@ struct wme_parameter_element {
 	struct wme_ac_parameter ac[4];
 
 } __attribute__((packed));
-
-#endif
 
 #define WPA_PUT_LE16(a, val)			\
 	do {					\
@@ -174,8 +175,6 @@ enum ieee80211_back_parties {
 	WLAN_BACK_INITIATOR = 1,
 	WLAN_BACK_TIMER = 2,
 };
-
-#ifdef PLATFORM_LINUX
 
 struct ieee80211_mgmt {
 	u16 frame_control;
@@ -303,11 +302,7 @@ struct ieee80211_mgmt {
 	} __attribute__((packed)) u;
 } __attribute__((packed));
 
-#endif
-
 /* mgmt header + 1 byte category code */
 #define IEEE80211_MIN_ACTION_SIZE FIELD_OFFSET(struct ieee80211_mgmt, u.action.u)
-
-
 
 #endif

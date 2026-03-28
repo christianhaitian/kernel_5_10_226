@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,7 +11,12 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- *****************************************************************************/
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ *
+ ******************************************************************************/
 #ifndef _LINUX_BYTEORDER_SWABB_H
 #define _LINUX_BYTEORDER_SWABB_H
 
@@ -140,13 +144,11 @@ __inline static__ void __swahb32s(__u32 *addr)
 	*/
 #endif /* __BYTEORDER_HAS_U64__ */
 
-#if defined(PLATFORM_LINUX)
-	#define swahw32 __swahw32
-	#define swahb32 __swahb32
-	#define swahw32p __swahw32p
-	#define swahb32p __swahb32p
-	#define swahw32s __swahw32s
-	#define swahb32s __swahb32s
-#endif
+#define swahw32 __swahw32
+#define swahb32 __swahb32
+#define swahw32p __swahw32p
+#define swahb32p __swahb32p
+#define swahw32s __swahw32s
+#define swahb32s __swahb32s
 
 #endif /* _LINUX_BYTEORDER_SWABB_H */

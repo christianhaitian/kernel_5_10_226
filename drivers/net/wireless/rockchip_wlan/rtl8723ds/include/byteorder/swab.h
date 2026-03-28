@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,7 +11,12 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- *****************************************************************************/
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ *
+ ******************************************************************************/
 #ifndef _LINUX_BYTEORDER_SWAB_H
 #define _LINUX_BYTEORDER_SWAB_H
 
@@ -105,33 +109,23 @@ __inline static __u64 __arch__swab64(__u64 x)
 	#define __swab64(x) __fswab64(x)
 #endif /* __swab16 */
 
-#ifdef PLATFORM_FREEBSD
-	__inline static __u16 __fswab16(__u16 x)
-#else
-	__inline static const __u16 __fswab16(__u16 x)
-#endif /* PLATFORM_FREEBSD */
+__inline static const __u16 __fswab16(__u16 x)
 {
 	return __arch__swab16(x);
 }
-#ifdef PLATFORM_FREEBSD
-	__inline static __u32 __fswab32(__u32 x)
-#else
-	__inline static const __u32 __fswab32(__u32 x)
-#endif /* PLATFORM_FREEBSD */
+__inline static const __u32 __fswab32(__u32 x)
 {
 	return __arch__swab32(x);
 }
 
-#if defined(PLATFORM_LINUX) || defined(PLATFORM_WINDOWS)
-	#define swab16 __swab16
-	#define swab32 __swab32
-	#define swab64 __swab64
-	#define swab16p __swab16p
-	#define swab32p __swab32p
-	#define swab64p __swab64p
-	#define swab16s __swab16s
-	#define swab32s __swab32s
-	#define swab64s __swab64s
-#endif
+#define swab16 __swab16
+#define swab32 __swab32
+#define swab64 __swab64
+#define swab16p __swab16p
+#define swab32p __swab32p
+#define swab64p __swab64p
+#define swab16s __swab16s
+#define swab32s __swab32s
+#define swab64s __swab64s
 
 #endif /* _LINUX_BYTEORDER_SWAB_H */

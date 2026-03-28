@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,7 +11,12 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- *****************************************************************************/
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ *
+ ******************************************************************************/
 #ifndef __PCI_HAL_H__
 #define __PCI_HAL_H__
 
@@ -26,10 +30,6 @@
 
 #if defined(CONFIG_RTL8192E)
 	void rtl8192ee_set_hal_ops(_adapter *padapter);
-#endif
-
-#if defined(CONFIG_RTL8192F)
-	void rtl8192fe_set_hal_ops(_adapter *padapter);
 #endif
 
 #ifdef CONFIG_RTL8723B
@@ -46,14 +46,6 @@
 
 #ifdef CONFIG_RTL8822B
 	void rtl8822be_set_hal_ops(PADAPTER padapter);
-#endif
-
-#ifdef CONFIG_RTL8822C
-	void rtl8822ce_set_hal_ops(PADAPTER padapter);
-#endif
-
-#ifdef CONFIG_RTL8814B
-	void rtl8814be_set_hal_ops(PADAPTER padapter);
 #endif
 
 u8 rtw_set_hal_ops(_adapter *padapter);

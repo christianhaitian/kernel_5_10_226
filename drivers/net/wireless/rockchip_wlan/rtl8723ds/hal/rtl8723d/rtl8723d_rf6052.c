@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,7 +11,12 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- *****************************************************************************/
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ *
+ ******************************************************************************/
 /******************************************************************************
  *
  *
@@ -46,11 +50,9 @@
 
 
 /*------------------------Define local variable------------------------------*/
-#ifdef CONFIG_RF_SHADOW_RW
 /* 2008/11/20 MH For Debug only, RF
  * static	RF_SHADOW_T	RF_Shadow[RF6052_MAX_PATH][RF6052_MAX_REG] = {0}; */
 static	RF_SHADOW_T	RF_Shadow[RF6052_MAX_PATH][RF6052_MAX_REG];
-#endif /*CONFIG_RF_SHADOW_RW*/
 /*------------------------Define local variable------------------------------*/
 
 /*-----------------------------------------------------------------------------
@@ -67,10 +69,10 @@ static	RF_SHADOW_T	RF_Shadow[RF6052_MAX_PATH][RF6052_MAX_REG];
  *
  * Note:		For RF type 0222D
  *---------------------------------------------------------------------------*/
-void
+VOID
 PHY_RF6052SetBandwidth8723D(
-		PADAPTER padapter,
-		enum channel_width Bandwidth)	/* 20M or 40M */
+	IN PADAPTER padapter,
+	IN CHANNEL_WIDTH Bandwidth)	/* 20M or 40M */
 {
 	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(padapter);
 
@@ -81,7 +83,7 @@ PHY_RF6052SetBandwidth8723D(
 		RF_A_reg 0x18[9:0]
 		*/
 		pHalData->RfRegChnlVal[0] = ((pHalData->RfRegChnlVal[0] & 0xfffff3ff) | BIT(10) | BIT(11));
-		phy_set_rf_reg(padapter, RF_PATH_A, 0x18, bRFRegOffsetMask, pHalData->RfRegChnlVal[0]); /* RF TRX_BW */
+		PHY_SetRFReg(padapter, ODM_RF_PATH_A, 0x18, bRFRegOffsetMask, pHalData->RfRegChnlVal[0]); /* RF TRX_BW */
 		break;
 	case CHANNEL_WIDTH_40:
 		/*
@@ -89,30 +91,43 @@ PHY_RF6052SetBandwidth8723D(
 		RF_A_reg 0x18[9:0]
 		*/
 		pHalData->RfRegChnlVal[0] = ((pHalData->RfRegChnlVal[0] & 0xfffff3ff) | BIT(10));
-		phy_set_rf_reg(padapter, RF_PATH_A, 0x18, bRFRegOffsetMask, pHalData->RfRegChnlVal[0]); /* RF TRX_BW */
+		PHY_SetRFReg(padapter, ODM_RF_PATH_A, 0x18, bRFRegOffsetMask, pHalData->RfRegChnlVal[0]); /* RF TRX_BW */
 		break;
 	default:
 		break;
 	}
 }
 
+static VOID
+phy_RF6052_Config_HardCode(
+	IN	PADAPTER		Adapter
+)
+{
+
+	/* Set Default Bandwidth to 20M */
+	/* Adapter->HalFunc	.SetBWModeHandler(Adapter, CHANNEL_WIDTH_20); */
+
+	/* TODO: Set Default Channel to channel one for RTL8225 */
+
+}
+
 static int
 phy_RF6052_Config_ParaFile(
-		PADAPTER		Adapter
+	IN	PADAPTER		Adapter
 )
 {
 	u32					u4RegValue = 0;
-	enum rf_path			eRFPath;
+	u8					eRFPath;
 	BB_REGISTER_DEFINITION_T	*pPhyReg;
 
 	int					rtStatus = _SUCCESS;
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(Adapter);
-	struct hal_spec_t *hal_spec = GET_HAL_SPEC(Adapter);
 
 	/* 3//----------------------------------------------------------------- */
 	/* 3// <2> Initialize RF */
 	/* 3//----------------------------------------------------------------- */
-	for (eRFPath = RF_PATH_A; eRFPath < hal_spec->rf_reg_path_num; eRFPath++) {
+	/* for(eRFPath = RF_PATH_A; eRFPath <pHalData->NumTotalRFPath; eRFPath++) */
+	for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath; eRFPath++) {
 
 		pPhyReg = &pHalData->PHYRegDef[eRFPath];
 
@@ -120,30 +135,27 @@ phy_RF6052_Config_ParaFile(
 		switch (eRFPath) {
 		case RF_PATH_A:
 		case RF_PATH_C:
-			u4RegValue = phy_query_bb_reg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV);
+			u4RegValue = PHY_QueryBBReg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV);
 			break;
 		case RF_PATH_B:
 		case RF_PATH_D:
-			u4RegValue = phy_query_bb_reg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV << 16);
-			break;
-		default:
-			RTW_ERR("Invalid rf_path:%d\n", eRFPath);
+			u4RegValue = PHY_QueryBBReg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV << 16);
 			break;
 		}
 
 		/*----Set RF_ENV enable----*/
-		phy_set_bb_reg(Adapter, pPhyReg->rfintfe, bRFSI_RFENV << 16, 0x1);
+		PHY_SetBBReg(Adapter, pPhyReg->rfintfe, bRFSI_RFENV << 16, 0x1);
 		rtw_udelay_os(1);/* PlatformStallExecution(1); */
 
 		/*----Set RF_ENV output high----*/
-		phy_set_bb_reg(Adapter, pPhyReg->rfintfo, bRFSI_RFENV, 0x1);
+		PHY_SetBBReg(Adapter, pPhyReg->rfintfo, bRFSI_RFENV, 0x1);
 		rtw_udelay_os(1);/* PlatformStallExecution(1); */
 
 		/* Set bit number of Address and Data for RF register */
-		phy_set_bb_reg(Adapter, pPhyReg->rfHSSIPara2, b3WireAddressLength, 0x0);	/* Set 1 to 4 bits for 8255 */
+		PHY_SetBBReg(Adapter, pPhyReg->rfHSSIPara2, b3WireAddressLength, 0x0);	/* Set 1 to 4 bits for 8255 */
 		rtw_udelay_os(1);/* PlatformStallExecution(1); */
 
-		phy_set_bb_reg(Adapter, pPhyReg->rfHSSIPara2, b3WireDataLength, 0x0);	/* Set 0 to 12  bits for 8255 */
+		PHY_SetBBReg(Adapter, pPhyReg->rfHSSIPara2, b3WireDataLength, 0x0);	/* Set 0 to 12  bits for 8255 */
 		rtw_udelay_os(1);/* PlatformStallExecution(1); */
 
 		/*----Initialize RF fom connfiguration file----*/
@@ -154,7 +166,7 @@ phy_RF6052_Config_ParaFile(
 #endif
 			{
 #ifdef CONFIG_EMBEDDED_FWIMG
-				if (odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, eRFPath) == HAL_STATUS_FAILURE)
+				if (HAL_STATUS_FAILURE == ODM_ConfigRFWithHeaderFile(&pHalData->odmpriv, CONFIG_RF_RADIO, (ODM_RF_RADIO_PATH_E)eRFPath))
 					rtStatus = _FAIL;
 #endif
 			}
@@ -165,7 +177,7 @@ phy_RF6052_Config_ParaFile(
 #endif
 			{
 #ifdef CONFIG_EMBEDDED_FWIMG
-				if (odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, eRFPath) == HAL_STATUS_FAILURE)
+				if (HAL_STATUS_FAILURE == ODM_ConfigRFWithHeaderFile(&pHalData->odmpriv, CONFIG_RF_RADIO, (ODM_RF_RADIO_PATH_E)eRFPath))
 					rtStatus = _FAIL;
 #endif
 			}
@@ -174,23 +186,17 @@ phy_RF6052_Config_ParaFile(
 			break;
 		case RF_PATH_D:
 			break;
-		default:
-			RTW_ERR("Invalid rf_path:%d\n", eRFPath);
-			break;
 		}
 
 		/*----Restore RFENV control type----*/;
 		switch (eRFPath) {
 		case RF_PATH_A:
 		case RF_PATH_C:
-			phy_set_bb_reg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV, u4RegValue);
+			PHY_SetBBReg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV, u4RegValue);
 			break;
 		case RF_PATH_B:
 		case RF_PATH_D:
-			phy_set_bb_reg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV << 16, u4RegValue);
-			break;
-		default:
-			RTW_ERR("Invalid rf_path:%d\n", eRFPath);
+			PHY_SetBBReg(Adapter, pPhyReg->rfintfs, bRFSI_RFENV << 16, u4RegValue);
 			break;
 		}
 
@@ -209,7 +215,7 @@ phy_RF6052_Config_ParaFile(
 #endif
 	{
 #ifdef CONFIG_EMBEDDED_FWIMG
-		odm_config_rf_with_tx_pwr_track_header_file(&pHalData->odmpriv);
+		ODM_ConfigRFWithTxPwrTrackHeaderFile(&pHalData->odmpriv);
 #endif
 	}
 
@@ -222,15 +228,26 @@ phy_RF6052_Config_ParaFile_Fail:
 
 int
 PHY_RF6052_Config8723D(
-		PADAPTER		Adapter)
+	IN	PADAPTER		Adapter)
 {
+	HAL_DATA_TYPE				*pHalData = GET_HAL_DATA(Adapter);
 	int					rtStatus = _SUCCESS;
+
+	/* */
+	/* Initialize general global value */
+	/* */
+	/* TODO: Extend RF_PATH_C and RF_PATH_D in the future */
+	if (pHalData->rf_type == RF_1T1R)
+		pHalData->NumTotalRFPath = 1;
+	else
+		pHalData->NumTotalRFPath = 2;
 
 	/* */
 	/* Config BB and RF */
 	/* */
 	rtStatus = phy_RF6052_Config_ParaFile(Adapter);
 	return rtStatus;
+
 }
 
 /* End of HalRf6052.c */

@@ -1,18 +1,21 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
- *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- *****************************************************************************/
+*
+* Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+*
+* This program is free software; you can redistribute it and/or modify it
+* under the terms of version 2 of the GNU General Public License as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details.
+*
+* You should have received a copy of the GNU General Public License along with
+* this program; if not, write to the Free Software Foundation, Inc.,
+* 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+*
+******************************************************************************/
 
 #include <drv_types.h>
 #include "HalEfuseMask8723D_SDIO.h"
@@ -21,7 +24,7 @@
 *                           MSDIO.TXT
 ******************************************************************************/
 
-u8 Array_MP_8723D_MSDIO[] = {
+u1Byte Array_MP_8723D_MSDIO[] = {
 	0xFF,
 	0xF3,
 	0x00,
@@ -56,25 +59,25 @@ u8 Array_MP_8723D_MSDIO[] = {
 	0x00,
 };
 
-u16
-EFUSE_GetArrayLen_MP_8723D_MSDIO(void)
+u2Byte
+EFUSE_GetArrayLen_MP_8723D_MSDIO(VOID)
 {
-	return sizeof(Array_MP_8723D_MSDIO) / sizeof(u8);
+	return sizeof(Array_MP_8723D_MSDIO) / sizeof(u1Byte);
 }
 
-void
+VOID
 EFUSE_GetMaskArray_MP_8723D_MSDIO(
-		u8 *Array
+	IN	OUT pu1Byte Array
 )
 {
-	u16 len = EFUSE_GetArrayLen_MP_8723D_MSDIO(), i = 0;
+	u2Byte len = EFUSE_GetArrayLen_MP_8723D_MSDIO(), i = 0;
 
 	for (i = 0; i < len; ++i)
 		Array[i] = Array_MP_8723D_MSDIO[i];
 }
 BOOLEAN
 EFUSE_IsAddressMasked_MP_8723D_MSDIO(
-		u16 Offset
+	IN   u2Byte  Offset
 )
 {
 	int r = Offset / 16;

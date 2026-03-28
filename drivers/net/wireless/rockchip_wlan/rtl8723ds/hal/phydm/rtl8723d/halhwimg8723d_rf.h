@@ -1,78 +1,88 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/******************************************************************************
- *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- *****************************************************************************/
+/****************************************************************************** 
+* 
+* Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved. 
+* 
+* This program is free software; you can redistribute it and/or modify it 
+* under the terms of version 2 of the GNU General Public License as 
+* published by the Free Software Foundation. 
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT 
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+* more details. 
+* 
+* You should have received a copy of the GNU General Public License along with 
+* this program; if not, write to the Free Software Foundation, Inc., 
+* 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA 
+* 
+* 
+******************************************************************************/
 
-/*Image2HeaderVersion: 3.5.2*/
+/*Image2HeaderVersion: 2.26*/
 #if (RTL8723D_SUPPORT == 1)
 #ifndef __INC_MP_RF_HW_IMG_8723D_H
 #define __INC_MP_RF_HW_IMG_8723D_H
 
 
 /******************************************************************************
-*                           radioa.TXT
+*                           RadioA.TXT
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8723d_radioa( /* tc: Test Chip, mp: mp Chip*/
-				    struct dm_struct *dm);
-u32 odm_get_version_mp_8723d_radioa(void);
+ODM_ReadAndConfig_MP_8723D_RadioA(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8723D_RadioA(void);
 
 /******************************************************************************
-*                           txpowertrack_pcie.TXT
+*                           TxPowerTrack_PCIE.TXT
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8723d_txpowertrack_pcie( /* tc: Test Chip, mp: mp Chip*/
-					       struct dm_struct *dm);
-u32	odm_get_version_mp_8723d_txpowertrack_pcie(void);
+ODM_ReadAndConfig_MP_8723D_TxPowerTrack_PCIE(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8723D_TxPowerTrack_PCIE(void);
 
 /******************************************************************************
-*                           txpowertrack_sdio.TXT
+*                           TxPowerTrack_SDIO.TXT
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8723d_txpowertrack_sdio( /* tc: Test Chip, mp: mp Chip*/
-					       struct dm_struct *dm);
-u32	odm_get_version_mp_8723d_txpowertrack_sdio(void);
+ODM_ReadAndConfig_MP_8723D_TxPowerTrack_SDIO(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8723D_TxPowerTrack_SDIO(void);
 
 /******************************************************************************
-*                           txpowertrack_usb.TXT
+*                           TxPowerTrack_USB.TXT
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8723d_txpowertrack_usb( /* tc: Test Chip, mp: mp Chip*/
-					      struct dm_struct *dm);
-u32	odm_get_version_mp_8723d_txpowertrack_usb(void);
+ODM_ReadAndConfig_MP_8723D_TxPowerTrack_USB(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8723D_TxPowerTrack_USB(void);
 
 /******************************************************************************
-*                           txpwr_lmt.TXT
+*                           TXPWR_LMT.TXT
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8723d_txpwr_lmt( /* tc: Test Chip, mp: mp Chip*/
-				       struct dm_struct *dm);
-u32	odm_get_version_mp_8723d_txpwr_lmt(void);
+ODM_ReadAndConfig_MP_8723D_TXPWR_LMT(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8723D_TXPWR_LMT(void);
 
 /******************************************************************************
-*                           txxtaltrack.TXT
+*                           TxXtalTrack.TXT
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8723d_txxtaltrack( /* tc: Test Chip, mp: mp Chip*/
-					 struct dm_struct *dm);
-u32	odm_get_version_mp_8723d_txxtaltrack(void);
+ODM_ReadAndConfig_MP_8723D_TxXtalTrack(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8723D_TxXtalTrack(void);
 
 #endif
 #endif /* end of HWIMG_SUPPORT*/

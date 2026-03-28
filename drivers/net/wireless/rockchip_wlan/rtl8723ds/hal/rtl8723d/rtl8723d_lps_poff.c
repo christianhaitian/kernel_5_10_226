@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2012 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,7 +11,12 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- *****************************************************************************/
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ *
+ ******************************************************************************/
 #include <rtl8723d_hal.h>
 
 #ifdef CONFIG_LPS_POFF
@@ -205,7 +209,7 @@ static void rtl8723d_lps_poff_set_tx_bndy(PADAPTER padapter, u8 tx_bndy)
 	u32	val32 = 0;
 	u8	val8  = 0;
 
-#ifdef CONFIG_PCI_HCI
+#if (DEV_BUS_TYPE == RT_PCI_INTERFACE)
 	numHQ = 0x8;
 	numLQ = 0x8;
 #endif
@@ -244,7 +248,7 @@ static bool rtl8723d_lps_poff_tx_bndy_flow(PADAPTER padapter, bool enable)
 	ATOMIC_SET(&plps_poff_info->bTxBoundInProgress, _TRUE);
 
 	/* stop os layer TX*/
-	rtw_mi_netif_stop_queue(padapter);
+	rtw_mi_netif_stop_queue(padapter, _FALSE);
 
 	val16 = rtw_read16(padapter, REG_TXPKT_EMPTY);
 
@@ -373,7 +377,7 @@ static void rtl8723d_lps_poff_send_config_file(PADAPTER padapter,
 	bool bRecover = _FALSE, bcn_valid = _FALSE;
 	u8 DLBcnCount = 0, val8 = 0, tx_bndy = 0;
 	u32 poll = 0;
-	u8 RegFwHwTxQCtrl;
+
 	rtw_hal_get_def_var(padapter,
 			    HAL_DEF_TX_PAGE_BOUNDARY, (u8 *)&tx_bndy);
 
@@ -383,13 +387,13 @@ static void rtl8723d_lps_poff_send_config_file(PADAPTER padapter,
 	rtw_write8(padapter,  REG_CR + 1, val8);
 
 	/*set 0x422[6]=0 to disable beacon DMA pass to MACTx*/
-	RegFwHwTxQCtrl = rtw_read8(padapter, REG_FWHW_TXQ_CTRL + 2);
-	if (RegFwHwTxQCtrl & BIT(6))
+
+	if (pHalData->RegFwHwTxQCtrl & BIT(6))
 		bRecover = _TRUE;
 
-	RegFwHwTxQCtrl &= ~BIT(6);
-
-	rtw_write8(padapter, REG_FWHW_TXQ_CTRL + 2, RegFwHwTxQCtrl);
+	rtw_write8(padapter, REG_FWHW_TXQ_CTRL + 2,
+		   pHalData->RegFwHwTxQCtrl & ~BIT(6));
+	pHalData->RegFwHwTxQCtrl &= ~BIT(6);
 
 	/* Clear beacon valid check bit. */
 	rtw_hal_set_hwreg(padapter, HW_VAR_BCN_VALID, NULL);
@@ -426,8 +430,9 @@ static void rtl8723d_lps_poff_send_config_file(PADAPTER padapter,
 
 	/*restore 0x422[6]=1 for normal bcn*/
 	if (bRecover) {
-		RegFwHwTxQCtrl |= BIT(6);
-		rtw_write8(padapter, REG_FWHW_TXQ_CTRL + 2, RegFwHwTxQCtrl);
+		rtw_write8(padapter, REG_FWHW_TXQ_CTRL + 2,
+			   pHalData->RegFwHwTxQCtrl | BIT(6));
+		pHalData->RegFwHwTxQCtrl |= BIT(6);
 	}
 
 	/*restore 0x100[8]=0 for SW beacon*/
@@ -543,7 +548,7 @@ static void rtl8723d_lps_poff_dynamic_file(PADAPTER padapter, u8 index, u8 isGK)
 		}
 
 		ret = rtl8723d_lps_poff_set_dynamic_file(ptkfile,
-				REG_CAMWRITE, tgt_wdata);
+				WCAMI, tgt_wdata);
 
 		if (!isGK) {
 			plps_poff_info->ConfLenForPTK += ret;
@@ -558,7 +563,7 @@ static void rtl8723d_lps_poff_dynamic_file(PADAPTER padapter, u8 index, u8 isGK)
 		}
 
 		ret = rtl8723d_lps_poff_set_dynamic_file(ptkfile,
-				REG_CAMCMD, tgt_cmd);
+				RWCAM, tgt_cmd);
 
 		if (!isGK)
 			plps_poff_info->ConfLenForPTK += ret;

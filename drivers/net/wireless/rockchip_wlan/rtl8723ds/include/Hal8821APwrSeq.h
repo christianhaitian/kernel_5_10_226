@@ -1,18 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/******************************************************************************
- *
- * Copyright(c) 2016 - 2017 Realtek Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- *****************************************************************************/
 #ifndef REALTEK_POWER_SEQUENCE_8821
 #define REALTEK_POWER_SEQUENCE_8821
 
@@ -77,7 +62,7 @@
 	{0x005A, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_ALL_MSK, PWR_BASEADDR_MAC, PWR_CMD_WRITE, BIT1, BIT1},/*Enable HSISR GPIO9 interrupt*/\
 	{0x007A, PWR_CUT_TESTCHIP_MSK, PWR_FAB_ALL_MSK, PWR_INTF_ALL_MSK, PWR_BASEADDR_MAC, PWR_CMD_WRITE, 0xFF, 0x3A},/*0x7A = 0x3A start BT*/\
 	{0x002E, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_ALL_MSK, PWR_BASEADDR_MAC, PWR_CMD_WRITE, 0xFF , 0x82 },/* 0x2C[23:12]=0x820 ; XTAL trim */ \
-	{0x0010, PWR_CUT_A_MSK , PWR_FAB_ALL_MSK, PWR_INTF_ALL_MSK, PWR_BASEADDR_MAC, PWR_CMD_WRITE, BIT6 , BIT6 },/* 0x10[6]=1 ; MP∑sºWπÔ©Û0x2C™∫±±®Ó≈v°A∂∑ß‚0x10[6]≥]¨∞1§~Ø‡≈˝WLAN±±®Ó */ \
+	{0x0010, PWR_CUT_A_MSK , PWR_FAB_ALL_MSK, PWR_INTF_ALL_MSK, PWR_BASEADDR_MAC, PWR_CMD_WRITE, BIT6 , BIT6 },/* 0x10[6]=1 ; MPÊñ∞Â¢ûÂ∞çÊñº0x2CÁöÑÊéßÂà∂Ê¨äÔºåÈ†àÊää0x10[6]Ë®≠ÁÇ∫1ÊâçËÉΩËÆìWLANÊéßÂà∂ */ \
 
 
 #define RTL8821A_TRANS_ACT_TO_CARDEMU													\
