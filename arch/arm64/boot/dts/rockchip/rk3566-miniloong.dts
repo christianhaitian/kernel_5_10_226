@@ -647,9 +647,9 @@
 &i2c0 {
 	status = "okay";
 
-	vdd_cpu: regulator@40 {
-		compatible = "tcs,fan53555";
-		reg = <0x40>;
+	vdd_cpu: tcs4525@1c {
+		compatible = "tcs,tcs4525";
+		reg = <0x1c>;
 		vin-supply = <&vccsys>;
 		regulator-compatible = "fan53555-reg";
 		regulator-name = "vdd_cpu";
