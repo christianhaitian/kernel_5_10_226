@@ -1753,15 +1753,23 @@ static unsigned int aw20036_miniloong_scale(unsigned int value,
  * makes a yellow breathe drift green.  Keep a small red floor and a smaller
  * green floor while breathing yellow so the hue stays warm through the fade.
  */
-#define AW20036_MINILOONG_YELLOW_BREATHE_RED_FLOOR   8
-#define AW20036_MINILOONG_YELLOW_BREATHE_GREEN_FLOOR 3
+#define AW20036_MINILOONG_YELLOW_BREATHE_RED_FLOOR   6
+#define AW20036_MINILOONG_YELLOW_BREATHE_GREEN_FLOOR 1
 #define AW20036_MINILOONG_YELLOW_BREATHE_GREEN_PCT   60
+
+/*
+ * Breathe has its own yellow correction path.  Skip the solid-yellow
+ * correction while writing breathe frames so the solid red floor does not
+ * flatten the low end of the animation into a blink.
+ */
+static bool aw20036_miniloong_skip_solid_yellow_correction;
 
 static void aw20036_miniloong_correct_yellow(unsigned int *red_brightness,
 						    unsigned int *green_brightness,
 						    unsigned int *blue_brightness)
 {
-	if (*red_brightness && *green_brightness && !*blue_brightness &&
+	if (!aw20036_miniloong_skip_solid_yellow_correction &&
+	    *red_brightness && *green_brightness && !*blue_brightness &&
 	    aw20036_miniloong_brightness < AW20036_MINILOONG_YELLOW_THRESHOLD) {
 		*green_brightness =
 			DIV_ROUND_CLOSEST(*green_brightness *
@@ -1877,6 +1885,7 @@ static int aw20036_miniloong_apply_current_color_breathe(struct aw20036 *aw20036
 {
 	unsigned int red_brightness;
 	unsigned int green_brightness;
+	int ret;
 
 	if (aw20036_miniloong_cur_red &&
 	    aw20036_miniloong_cur_green &&
@@ -1898,10 +1907,14 @@ static int aw20036_miniloong_apply_current_color_breathe(struct aw20036 *aw20036
 			green_brightness =
 				AW20036_MINILOONG_YELLOW_BREATHE_GREEN_FLOOR;
 
-		return aw20036_miniloong_write_rgb(aw20036,
-						   red_brightness,
-						   green_brightness,
-						   0);
+		aw20036_miniloong_skip_solid_yellow_correction = true;
+		ret = aw20036_miniloong_write_rgb(aw20036,
+						    red_brightness,
+						    green_brightness,
+						    0);
+		aw20036_miniloong_skip_solid_yellow_correction = false;
+
+		return ret;
 	}
 
 	return aw20036_miniloong_apply_current_color(aw20036, brightness);
