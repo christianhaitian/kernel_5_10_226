@@ -1744,16 +1744,35 @@ static unsigned int aw20036_miniloong_scale(unsigned int value,
  */
 #define AW20036_MINILOONG_YELLOW_THRESHOLD 255
 #define AW20036_MINILOONG_YELLOW_GREEN_PCT 27
+#define AW20036_MINILOONG_YELLOW_RED_FLOOR   15
+#define AW20036_MINILOONG_YELLOW_GREEN_FLOOR 2
+
+/*
+ * Yellow breathe needs its own correction.  At very low PWM values the red
+ * LEDs can fall below their visible turn-on point before green does, which
+ * makes a yellow breathe drift green.  Keep a small red floor and a smaller
+ * green floor while breathing yellow so the hue stays warm through the fade.
+ */
+#define AW20036_MINILOONG_YELLOW_BREATHE_RED_FLOOR   8
+#define AW20036_MINILOONG_YELLOW_BREATHE_GREEN_FLOOR 3
+#define AW20036_MINILOONG_YELLOW_BREATHE_GREEN_PCT   60
 
 static void aw20036_miniloong_correct_yellow(unsigned int *red_brightness,
 						    unsigned int *green_brightness,
 						    unsigned int *blue_brightness)
 {
 	if (*red_brightness && *green_brightness && !*blue_brightness &&
-	    aw20036_miniloong_brightness < AW20036_MINILOONG_YELLOW_THRESHOLD)
+	    aw20036_miniloong_brightness < AW20036_MINILOONG_YELLOW_THRESHOLD) {
 		*green_brightness =
 			DIV_ROUND_CLOSEST(*green_brightness *
 					  AW20036_MINILOONG_YELLOW_GREEN_PCT, 100);
+
+		if (*red_brightness < AW20036_MINILOONG_YELLOW_RED_FLOOR)
+			*red_brightness = AW20036_MINILOONG_YELLOW_RED_FLOOR;
+
+		if (*green_brightness < AW20036_MINILOONG_YELLOW_GREEN_FLOOR)
+			*green_brightness = AW20036_MINILOONG_YELLOW_GREEN_FLOOR;
+	}
 }
 
 static int aw20036_miniloong_write_rgb(struct aw20036 *aw20036,
@@ -1853,6 +1872,41 @@ static int aw20036_miniloong_apply_current_color(struct aw20036 *aw20036,
 			brightness);
 }
 
+static int aw20036_miniloong_apply_current_color_breathe(struct aw20036 *aw20036,
+							 unsigned int brightness)
+{
+	unsigned int red_brightness;
+	unsigned int green_brightness;
+
+	if (aw20036_miniloong_cur_red &&
+	    aw20036_miniloong_cur_green &&
+	    !aw20036_miniloong_cur_blue &&
+	    brightness) {
+		red_brightness = brightness;
+		green_brightness =
+			DIV_ROUND_CLOSEST(brightness *
+					  AW20036_MINILOONG_YELLOW_BREATHE_GREEN_PCT,
+					  100);
+
+		if (red_brightness <
+		    AW20036_MINILOONG_YELLOW_BREATHE_RED_FLOOR)
+			red_brightness =
+				AW20036_MINILOONG_YELLOW_BREATHE_RED_FLOOR;
+
+		if (green_brightness <
+		    AW20036_MINILOONG_YELLOW_BREATHE_GREEN_FLOOR)
+			green_brightness =
+				AW20036_MINILOONG_YELLOW_BREATHE_GREEN_FLOOR;
+
+		return aw20036_miniloong_write_rgb(aw20036,
+						   red_brightness,
+						   green_brightness,
+						   0);
+	}
+
+	return aw20036_miniloong_apply_current_color(aw20036, brightness);
+}
+
 static void aw20036_miniloong_schedule_effect(unsigned int delay_ms)
 {
 	schedule_delayed_work(&aw20036_miniloong_effect_work,
@@ -1902,7 +1956,7 @@ static void aw20036_miniloong_effect_work_func(struct work_struct *work)
 			aw20036_miniloong_breathe_index %
 			ARRAY_SIZE(aw20036_miniloong_breathe_table)];
 		scaled_brightness = aw20036_miniloong_scale(table_value, brightness);
-		ret = aw20036_miniloong_apply_current_color(aw20036,
+		ret = aw20036_miniloong_apply_current_color_breathe(aw20036,
 							scaled_brightness);
 		aw20036_miniloong_breathe_index++;
 		delay_ms = aw20036_miniloong_breathe_step_ms;
