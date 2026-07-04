@@ -1743,7 +1743,7 @@ static unsigned int aw20036_miniloong_scale(unsigned int value,
  * If it looks too orange/red, raise it.
  */
 #define AW20036_MINILOONG_YELLOW_THRESHOLD 255
-#define AW20036_MINILOONG_YELLOW_GREEN_PCT 30
+#define AW20036_MINILOONG_YELLOW_GREEN_PCT 27
 
 static void aw20036_miniloong_correct_yellow(unsigned int *red_brightness,
 						    unsigned int *green_brightness,
