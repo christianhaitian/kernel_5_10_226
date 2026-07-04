@@ -1729,6 +1729,33 @@ static unsigned int aw20036_miniloong_scale(unsigned int value,
 	return DIV_ROUND_CLOSEST(value * brightness, 255);
 }
 
+/*
+ * Miniloong yellow correction.
+ *
+ * The Miniloong debug-page RGB path mixes yellow by lighting the red and
+ * green channel groups together.  At lower global brightness levels the green
+ * LEDs are visually stronger than the red LEDs, so equal red/green PWM values
+ * make yellow look greenish.  Warm only yellow-style output by trimming the
+ * green channel when red and green are active and blue is off.
+ *
+ * 204/255 is roughly 80%.  Above that, leave the previous behavior unchanged.
+ * If yellow still looks too green, lower AW20036_MINILOONG_YELLOW_GREEN_PCT.
+ * If it looks too orange/red, raise it.
+ */
+#define AW20036_MINILOONG_YELLOW_THRESHOLD 255
+#define AW20036_MINILOONG_YELLOW_GREEN_PCT 30
+
+static void aw20036_miniloong_correct_yellow(unsigned int *red_brightness,
+						    unsigned int *green_brightness,
+						    unsigned int *blue_brightness)
+{
+	if (*red_brightness && *green_brightness && !*blue_brightness &&
+	    aw20036_miniloong_brightness < AW20036_MINILOONG_YELLOW_THRESHOLD)
+		*green_brightness =
+			DIV_ROUND_CLOSEST(*green_brightness *
+					  AW20036_MINILOONG_YELLOW_GREEN_PCT, 100);
+}
+
 static int aw20036_miniloong_write_rgb(struct aw20036 *aw20036,
 				       unsigned int red_brightness,
 				       unsigned int green_brightness,
@@ -1742,6 +1769,10 @@ static int aw20036_miniloong_write_rgb(struct aw20036 *aw20036,
 		green_brightness = 255;
 	if (blue_brightness > 255)
 		blue_brightness = 255;
+
+	aw20036_miniloong_correct_yellow(&red_brightness,
+					   &green_brightness,
+					   &blue_brightness);
 
 	/*
 	 * Do not clear the whole debug page before each animation frame.
