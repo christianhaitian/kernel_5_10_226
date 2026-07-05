@@ -1435,7 +1435,14 @@
 &uart1 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn>;
+	pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn &uart1m0_rtsn>;
+	uart-has-rtscts;
+
+	bluetooth {
+		compatible = "realtek,rtl8723ds-bt", "realtek,rtl8723bs-bt";
+		enable-gpios = <&gpio4 RK_PA3 GPIO_ACTIVE_HIGH>;
+		max-speed = <1500000>;
+	};
 };
 
 &u2phy0_otg {
