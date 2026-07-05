@@ -1412,18 +1412,19 @@
 
 &sdmmc2 {
 	max-frequency = <100000000>;
-	supports-sdio;
 	bus-width = <4>;
 	disable-wp;
 	cap-sd-highspeed;
-	cap-sdio-irq;
-	keep-power-in-suspend;
-	mmc-pwrseq = <&sdio_pwrseq>;
-	non-removable;
+
+	no-sdio;
+	no-mmc;
+
+	vmmc-supply = <&vcc_sd>;
+	vqmmc-supply = <&vccio_sd>;
+
 	pinctrl-names = "default";
-	pinctrl-0 = <&sdmmc2m1_bus4 &sdmmc2m1_cmd &sdmmc2m1_clk>;
-	sd-uhs-sdr104;
-	rockchip,default-sample-phase = <90>;
+	pinctrl-0 = <&sdmmc2m1_bus4 &sdmmc2m1_cmd &sdmmc2m1_clk &sdmmc2m1_det>;
+
 	status = "okay";
 };
 
