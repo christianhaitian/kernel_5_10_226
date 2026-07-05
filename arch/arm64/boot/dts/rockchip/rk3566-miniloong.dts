@@ -1383,7 +1383,7 @@
 };
 
 &sdmmc1 {
-    max-frequency = <50000000>;
+    max-frequency = <150000000>;
 
     no-sd;
     no-mmc;
@@ -1391,6 +1391,7 @@
     voltage-ranges = <3300 3300>;
 
     bus-width = <4>;
+    cap-sd-highspeed;
     cap-sdio-irq;
     keep-power-in-suspend;
     non-removable;
@@ -1401,8 +1402,29 @@
 
     pinctrl-names = "default";
     pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_cmd &sdmmc1_clk>;
+    sd-uhs-sdr12;
+    sd-uhs-sdr25;
+    sd-uhs-sdr50;
+    sd-uhs-sdr104;
 
     status = "okay";
+};
+
+&sdmmc2 {
+	max-frequency = <100000000>;
+	supports-sdio;
+	bus-width = <4>;
+	disable-wp;
+	cap-sd-highspeed;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	mmc-pwrseq = <&sdio_pwrseq>;
+	non-removable;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc2m1_bus4 &sdmmc2m1_cmd &sdmmc2m1_clk>;
+	sd-uhs-sdr104;
+	rockchip,default-sample-phase = <90>;
+	status = "okay";
 };
 
 &tsadc {
