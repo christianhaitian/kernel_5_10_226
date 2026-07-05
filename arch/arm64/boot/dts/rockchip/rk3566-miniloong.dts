@@ -17,7 +17,7 @@
 #include "rk3568-linux.dtsi"
 
 / {
-	model = "MINILOONG Pocket1";
+	model = "MINILOONG Pocket1 aka me loove it loong time";
 	compatible = "miniloong,pocket1", "rockchip,rk3566";
 
 	chosen: chosen {
