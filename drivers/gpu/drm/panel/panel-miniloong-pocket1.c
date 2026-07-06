@@ -4,6 +4,7 @@
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/kernel.h>
+#include <linux/list.h>
 #include <linux/module.h>
 #include <linux/of.h>
 
@@ -14,6 +15,35 @@
 #define MIPI_DSI_DCS_SHORT_WRITE        0x05
 #define MIPI_DSI_DCS_SHORT_WRITE_PARAM  0x15
 #define MIPI_DSI_DCS_LONG_WRITE         0x39
+
+/*
+ * Which of the exposed modes should be reported to KMS as
+ * DRM_MODE_TYPE_PREFERRED. This is what SDL2/KMSDRM, most compositors,
+ * and RetroArch's own display setup pick up automatically with zero
+ * per-app configuration.
+ *
+ * Set via /etc/modprobe.d/<something>.conf if this driver builds as a
+ * loadable module:
+ *     options panel_miniloong_pocket1 preferred_refresh_hz=120
+ * (check the actual registered module name with
+ *  `find /lib/modules -iname 'panel-miniloong*'` and
+ *  `modinfo <path>.ko | grep ^name` -- kbuild normally turns hyphens
+ *  into underscores for the module name)
+ *
+ * Or, if compiled built-in rather than as a module, via the kernel
+ * command line in your bootloader config (e.g. extlinux.conf APPEND
+ * line):
+ *     panel_miniloong_pocket1.preferred_refresh_hz=120
+ *
+ * Either way this is read once at probe time -- it does not hot-switch
+ * a running display, a reboot is required to take effect. Defaults to
+ * 60 (safe/known-good) if unset or set to anything other than 60/120.
+ */
+static int preferred_refresh_hz = 60;
+module_param(preferred_refresh_hz, int, 0444);
+MODULE_PARM_DESC(preferred_refresh_hz,
+		 "Preferred panel refresh rate in Hz: 60 or 120 (default 60). "
+		 "Read once at probe time; requires reboot to change.");
 
 struct miniloong_panel {
 	struct drm_panel panel;
@@ -141,8 +171,8 @@ static int miniloong_disable(struct drm_panel *panel)
 }
 
 /*
- * All three modes share the same active area and porches/sync widths;
- * only the pixel clock changes to hit the target vrefresh:
+ * Both modes share the same active area and porches/sync widths; only
+ * the pixel clock changes to hit the target vrefresh:
  *
  *   vrefresh = clock_kHz * 1000 / (htotal * vtotal)
  *   htotal = 720 + 15 + 14 + 20 = 769
@@ -150,35 +180,37 @@ static int miniloong_disable(struct drm_panel *panel)
  *
  * DSI link is configured for rockchip,lane-rate = 1000 Mbps/lane * 4
  * lanes = 4 Gbps, in MIPI_DSI_MODE_VIDEO_BURST. Required throughput at
- * 120Hz is ~2.25 Gbps, so the existing lane-rate has ample headroom for
- * all three modes -- no DTS lane-rate change is needed.
+ * 120Hz is ~2.25 Gbps, so the existing lane-rate has ample headroom --
+ * no DTS lane-rate change is needed.
  *
- * 60Hz stays DRM_MODE_TYPE_PREFERRED so the device always boots on a
- * known-good timing; 90Hz/120Hz are exposed for userspace to opt into
- * once you've confirmed the panel scans cleanly at the faster rate
- * (watch for row-charge artifacts/ghosting on fast-moving content).
+ * Only 60Hz and 120Hz are exposed. 90Hz was tried and confirmed
+ * artifact-free on hardware, but was dropped anyway: it doesn't evenly
+ * divide the 60/30fps most emulated content runs at (90/60 = 1.5), so
+ * RetroArch would need dynamic rate control / pulldown to avoid judder
+ * on content that was previously judder-free. 120Hz is a clean 2x/4x
+ * multiple of 60/30fps, so frame-doubling would be judder-free by
+ * construction -- IF it were reliable.
+ *
+ * WARNING: 120Hz passed a brief modetest static-pattern check with no
+ * visible artifacts, but as the sustained boot default with real
+ * content it produced a black-and-white / grayscale image. That's
+ * consistent with the DSI D-PHY losing bit-lane sync on color-plane
+ * data at that clock, even though DE/HSYNC/VSYNC stayed locked enough
+ * to show a stable picture. The earlier bandwidth-margin math
+ * (lane-rate vs required throughput) was necessary but not sufficient
+ * -- signal integrity at the physical link/panel is the real
+ * constraint, and it only surfaced once driven continuously (that
+ * particular case turned out to be a boot-time hue/saturation script
+ * misbehaving, not the link itself, but treat 120Hz as unvalidated for
+ * daily use until re-confirmed with real content and that script
+ * disabled).
+ *
+ * Neither mode struct hardcodes DRM_MODE_TYPE_PREFERRED here --
+ * miniloong_get_modes() sets it dynamically on whichever mode matches
+ * the preferred_refresh_hz module parameter above.
  */
 static const struct drm_display_mode miniloong_mode_60hz = {
 	.clock = 47000,
-
-	.hdisplay = 720,
-	.hsync_start = 720 + 15,
-	.hsync_end = 720 + 15 + 14,
-	.htotal = 720 + 15 + 14 + 20,
-
-	.vdisplay = 960,
-	.vsync_start = 960 + 30,
-	.vsync_end = 960 + 30 + 8,
-	.vtotal = 960 + 30 + 8 + 20,
-
-	.width_mm = 229,
-	.height_mm = 143,
-
-	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
-};
-
-static const struct drm_display_mode miniloong_mode_90hz = {
-	.clock = 70456,
 
 	.hdisplay = 720,
 	.hsync_start = 720 + 15,
@@ -217,7 +249,6 @@ static const struct drm_display_mode miniloong_mode_120hz = {
 
 static const struct drm_display_mode *miniloong_modes[] = {
 	&miniloong_mode_60hz,
-	&miniloong_mode_90hz,
 	&miniloong_mode_120hz,
 };
 
@@ -225,17 +256,60 @@ static int miniloong_get_modes(struct drm_panel *panel,
 			       struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
+	int target_hz = preferred_refresh_hz;
 	int i, num = 0;
+	bool matched_preferred = false;
+
+	if (target_hz != 60 && target_hz != 120) {
+		dev_warn(panel->dev,
+			 "preferred_refresh_hz=%d is not 60 or 120, falling back to 60\n",
+			 target_hz);
+		target_hz = 60;
+	}
 
 	for (i = 0; i < ARRAY_SIZE(miniloong_modes); i++) {
 		mode = drm_mode_duplicate(connector->dev, miniloong_modes[i]);
 		if (!mode)
 			continue;
 
+		/*
+		 * Use the plain drm_mode_set_name() default ("720x960" for
+		 * both modes here), NOT a custom refresh-qualified name.
+		 * modetest's own "-s <conn>:<w>x<h>-<vrefresh>" parsing
+		 * splits off the "-<vrefresh>" suffix, searches for a mode
+		 * whose *name* matches the base "WxH" string exactly, and
+		 * disambiguates duplicates via the numeric vrefresh field
+		 * (auto-populated by the DRM core when modes are probed).
+		 * Renaming modes to e.g. "720x960-120" breaks that lookup
+		 * entirely, since no mode is then named plain "720x960".
+		 */
 		drm_mode_set_name(mode);
+
+		if (drm_mode_vrefresh(mode) == target_hz) {
+			mode->type |= DRM_MODE_TYPE_PREFERRED;
+			matched_preferred = true;
+		}
+
 		drm_mode_probed_add(connector, mode);
 		num++;
 	}
+
+	/*
+	 * Safety net: if for some reason nothing matched (shouldn't happen
+	 * given the 60/120 clamp above, but if the mode table itself ever
+	 * changes), fall back to marking the first mode preferred so KMS
+	 * always has an unambiguous default rather than none at all.
+	 */
+	if (!matched_preferred && num > 0) {
+		struct drm_display_mode *first;
+
+		list_for_each_entry(first, &connector->probed_modes, head) {
+			first->type |= DRM_MODE_TYPE_PREFERRED;
+			break;
+		}
+	}
+
+	dev_info(panel->dev, "preferred refresh rate: %dHz\n", target_hz);
 
 	connector->display_info.width_mm = 229;
 	connector->display_info.height_mm = 143;
