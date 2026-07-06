@@ -3,6 +3,7 @@
 #include <linux/backlight.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
 
@@ -139,7 +140,25 @@ static int miniloong_disable(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode miniloong_mode = {
+/*
+ * All three modes share the same active area and porches/sync widths;
+ * only the pixel clock changes to hit the target vrefresh:
+ *
+ *   vrefresh = clock_kHz * 1000 / (htotal * vtotal)
+ *   htotal = 720 + 15 + 14 + 20 = 769
+ *   vtotal = 960 + 30 + 8  + 20 = 1018
+ *
+ * DSI link is configured for rockchip,lane-rate = 1000 Mbps/lane * 4
+ * lanes = 4 Gbps, in MIPI_DSI_MODE_VIDEO_BURST. Required throughput at
+ * 120Hz is ~2.25 Gbps, so the existing lane-rate has ample headroom for
+ * all three modes -- no DTS lane-rate change is needed.
+ *
+ * 60Hz stays DRM_MODE_TYPE_PREFERRED so the device always boots on a
+ * known-good timing; 90Hz/120Hz are exposed for userspace to opt into
+ * once you've confirmed the panel scans cleanly at the faster rate
+ * (watch for row-charge artifacts/ghosting on fast-moving content).
+ */
+static const struct drm_display_mode miniloong_mode_60hz = {
 	.clock = 47000,
 
 	.hdisplay = 720,
@@ -158,22 +177,70 @@ static const struct drm_display_mode miniloong_mode = {
 	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
 };
 
+static const struct drm_display_mode miniloong_mode_90hz = {
+	.clock = 70456,
+
+	.hdisplay = 720,
+	.hsync_start = 720 + 15,
+	.hsync_end = 720 + 15 + 14,
+	.htotal = 720 + 15 + 14 + 20,
+
+	.vdisplay = 960,
+	.vsync_start = 960 + 30,
+	.vsync_end = 960 + 30 + 8,
+	.vtotal = 960 + 30 + 8 + 20,
+
+	.width_mm = 229,
+	.height_mm = 143,
+
+	.type = DRM_MODE_TYPE_DRIVER,
+};
+
+static const struct drm_display_mode miniloong_mode_120hz = {
+	.clock = 93941,
+
+	.hdisplay = 720,
+	.hsync_start = 720 + 15,
+	.hsync_end = 720 + 15 + 14,
+	.htotal = 720 + 15 + 14 + 20,
+
+	.vdisplay = 960,
+	.vsync_start = 960 + 30,
+	.vsync_end = 960 + 30 + 8,
+	.vtotal = 960 + 30 + 8 + 20,
+
+	.width_mm = 229,
+	.height_mm = 143,
+
+	.type = DRM_MODE_TYPE_DRIVER,
+};
+
+static const struct drm_display_mode *miniloong_modes[] = {
+	&miniloong_mode_60hz,
+	&miniloong_mode_90hz,
+	&miniloong_mode_120hz,
+};
+
 static int miniloong_get_modes(struct drm_panel *panel,
 			       struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
+	int i, num = 0;
 
-	mode = drm_mode_duplicate(connector->dev, &miniloong_mode);
-	if (!mode)
-		return -ENOMEM;
+	for (i = 0; i < ARRAY_SIZE(miniloong_modes); i++) {
+		mode = drm_mode_duplicate(connector->dev, miniloong_modes[i]);
+		if (!mode)
+			continue;
 
-	drm_mode_set_name(mode);
-	drm_mode_probed_add(connector, mode);
+		drm_mode_set_name(mode);
+		drm_mode_probed_add(connector, mode);
+		num++;
+	}
 
 	connector->display_info.width_mm = 229;
 	connector->display_info.height_mm = 143;
 
-	return 1;
+	return num;
 }
 
 static const struct drm_panel_funcs miniloong_panel_funcs = {

@@ -572,9 +572,47 @@
 			05 78 01 10
 		];
 		display-timings {
+			/*
+			 * Informational only: panel-miniloong-pocket1.c builds
+			 * its own drm_display_mode table (60/90/120Hz) rather
+			 * than reading this node via of_get_display_timing().
+			 * Kept here in sync so the DTS documents what the
+			 * driver actually exposes. native-mode stays on the
+			 * 60Hz timing as the safe default.
+			 */
 			native-mode = <&dsi0_timing0>;
 			dsi0_timing0: timing0 {
 				clock-frequency = <47000000>;
+				hactive = <720>;
+				vactive = <960>;
+				hsync-len = <14>;
+				hback-porch = <20>;
+				hfront-porch = <15>;
+				vsync-len = <8>;
+				vback-porch = <20>;
+				vfront-porch = <30>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+			dsi0_timing1: timing1 {
+				clock-frequency = <70456000>;
+				hactive = <720>;
+				vactive = <960>;
+				hsync-len = <14>;
+				hback-porch = <20>;
+				hfront-porch = <15>;
+				vsync-len = <8>;
+				vback-porch = <20>;
+				vfront-porch = <30>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+			dsi0_timing2: timing2 {
+				clock-frequency = <93941000>;
 				hactive = <720>;
 				vactive = <960>;
 				hsync-len = <14>;
