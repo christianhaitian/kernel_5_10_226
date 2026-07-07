@@ -482,7 +482,20 @@
 
 &dsi0 {
 	status = "okay";
-	rockchip,lane-rate = <1000>;
+	/*
+	 * Deliberately NOT setting rockchip,lane-rate here (stock/vendor
+	 * dts never sets it either -- confirmed by direct comparison).
+	 * Leaving it unset lets the dw-mipi-dsi driver auto-calculate the
+	 * DSI PHY bit rate per active mode, rather than forcing a fixed
+	 * 1000 Mbps/lane regardless of refresh rate. A fixed high rate
+	 * means the burst duty cycle (fraction of each line spent
+	 * actively toggling at high speed) grows with refresh rate even
+	 * though peak PHY bit rate doesn't -- a plausible source of
+	 * refresh-rate-dependent signal margin issues on some panel/cable
+	 * batches. If 90/120Hz white-screens on a given unit even with
+	 * this removed, that rules this out and points back toward a
+	 * genuine per-unit hardware margin limit instead.
+	 */
 	dsi0_panel: panel@0 {
 		compatible = "miniloong,pocket1-panel";
 		reg = <0>;
@@ -539,7 +552,8 @@
 			15 00 02 72 02 15 00 02 73 02 15 00 02 74 02 15
 			00 02 75 01 15 00 02 76 00 15 00 02 77 14 15 00
 			02 78 15 15 00 02 79 0e 15 00 02 7a 0f 15 00 02
-			7b 0c 15 00 02 7c 0d 15 00 02 7d 06 15 00 02 7e
+			7b 0c 15 00 02 7c 0d 15 00 02 7d
+			06 15 00 02 7e
 			02 15 00 02 7f 07 15 00 02 80 02 15 00 02 81 02
 			15 00 02 82 02 15 00 02 83 02 15 00 02 84 02 15
 			00 02 85 02 15 00 02 86 02 15 00 02 87 02 15 00
