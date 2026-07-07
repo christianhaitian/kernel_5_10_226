@@ -42,7 +42,7 @@
 static int preferred_refresh_hz = 60;
 module_param(preferred_refresh_hz, int, 0444);
 MODULE_PARM_DESC(preferred_refresh_hz,
-		 "Preferred panel refresh rate in Hz: 60 or 120 (default 60). "
+		 "Preferred panel refresh rate in Hz: 60, 90, or 120 (default 60). "
 		 "Read once at probe time; requires reboot to change.");
 
 struct miniloong_panel {
@@ -171,8 +171,8 @@ static int miniloong_disable(struct drm_panel *panel)
 }
 
 /*
- * Both modes share the same active area and porches/sync widths; only
- * the pixel clock changes to hit the target vrefresh:
+ * All three modes share the same active area and porches/sync widths;
+ * only the pixel clock changes to hit the target vrefresh:
  *
  *   vrefresh = clock_kHz * 1000 / (htotal * vtotal)
  *   htotal = 720 + 15 + 14 + 20 = 769
@@ -183,27 +183,19 @@ static int miniloong_disable(struct drm_panel *panel)
  * 120Hz is ~2.25 Gbps, so the existing lane-rate has ample headroom --
  * no DTS lane-rate change is needed.
  *
- * Only 60Hz and 120Hz are exposed. 90Hz was tried and confirmed
- * artifact-free on hardware, but was dropped anyway: it doesn't evenly
- * divide the 60/30fps most emulated content runs at (90/60 = 1.5), so
- * RetroArch would need dynamic rate control / pulldown to avoid judder
- * on content that was previously judder-free. 120Hz is a clean 2x/4x
- * multiple of 60/30fps, so frame-doubling would be judder-free by
- * construction -- IF it were reliable.
- *
- * WARNING: 120Hz passed a brief modetest static-pattern check with no
- * visible artifacts, but as the sustained boot default with real
- * content it produced a black-and-white / grayscale image. That's
- * consistent with the DSI D-PHY losing bit-lane sync on color-plane
- * data at that clock, even though DE/HSYNC/VSYNC stayed locked enough
- * to show a stable picture. The earlier bandwidth-margin math
- * (lane-rate vs required throughput) was necessary but not sufficient
- * -- signal integrity at the physical link/panel is the real
- * constraint, and it only surfaced once driven continuously (that
- * particular case turned out to be a boot-time hue/saturation script
- * misbehaving, not the link itself, but treat 120Hz as unvalidated for
- * daily use until re-confirmed with real content and that script
- * disabled).
+ * All three modes are exposed: 60Hz, 90Hz, 120Hz. 60Hz is the default
+ * (preferred_refresh_hz above) since it's the only rate validated as
+ * the sustained boot default with real content and no artifacts. 90Hz
+ * was earlier confirmed artifact-free on hardware via modetest, though
+ * note it doesn't evenly divide the 60/30fps most emulated content runs
+ * at (90/60 = 1.5) -- RetroArch would need dynamic rate control /
+ * pulldown to avoid judder that 120Hz's clean 2x/4x multiple avoids by
+ * construction. 120Hz passed a brief modetest static-pattern check
+ * artifact-free, but a black-and-white/grayscale symptom seen with it
+ * as the sustained boot default turned out to be an unrelated boot-time
+ * hue/saturation script issue, not the link itself -- still, treat
+ * 120Hz as the least-tested of the three until re-confirmed with real
+ * content and that script fixed/disabled.
  *
  * Neither mode struct hardcodes DRM_MODE_TYPE_PREFERRED here --
  * miniloong_get_modes() sets it dynamically on whichever mode matches
@@ -211,6 +203,25 @@ static int miniloong_disable(struct drm_panel *panel)
  */
 static const struct drm_display_mode miniloong_mode_60hz = {
 	.clock = 47000,
+
+	.hdisplay = 720,
+	.hsync_start = 720 + 15,
+	.hsync_end = 720 + 15 + 14,
+	.htotal = 720 + 15 + 14 + 20,
+
+	.vdisplay = 960,
+	.vsync_start = 960 + 30,
+	.vsync_end = 960 + 30 + 8,
+	.vtotal = 960 + 30 + 8 + 20,
+
+	.width_mm = 229,
+	.height_mm = 143,
+
+	.type = DRM_MODE_TYPE_DRIVER,
+};
+
+static const struct drm_display_mode miniloong_mode_90hz = {
+	.clock = 70456,
 
 	.hdisplay = 720,
 	.hsync_start = 720 + 15,
@@ -249,6 +260,7 @@ static const struct drm_display_mode miniloong_mode_120hz = {
 
 static const struct drm_display_mode *miniloong_modes[] = {
 	&miniloong_mode_60hz,
+	&miniloong_mode_90hz,
 	&miniloong_mode_120hz,
 };
 
@@ -260,9 +272,9 @@ static int miniloong_get_modes(struct drm_panel *panel,
 	int i, num = 0;
 	bool matched_preferred = false;
 
-	if (target_hz != 60 && target_hz != 120) {
+	if (target_hz != 60 && target_hz != 90 && target_hz != 120) {
 		dev_warn(panel->dev,
-			 "preferred_refresh_hz=%d is not 60 or 120, falling back to 60\n",
+			 "preferred_refresh_hz=%d is not 60, 90, or 120, falling back to 60\n",
 			 target_hz);
 		target_hz = 60;
 	}
