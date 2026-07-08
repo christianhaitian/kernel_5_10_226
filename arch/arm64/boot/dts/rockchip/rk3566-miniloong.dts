@@ -478,6 +478,30 @@
 	operating-points-v2 = <&dmc_opp_table>;
 	center-supply = <&vdd_logic>;
 	status = "okay";
+
+	/*
+	 * Copied verbatim from the stock/vendor dts's &dmc node -- absent
+	 * from this file previously. These tell the rockchip DMC (DDR
+	 * frequency) devfreq governor to proactively bump DDR clock speed
+	 * in response to VOP display bandwidth demand, rather than relying
+	 * only on generic reactive CPU-load-based scaling. Without these,
+	 * DDR could stay at a lower frequency during a sudden display
+	 * bandwidth spike (more likely at 90/120Hz, where there's less
+	 * time per frame for the memory subsystem to keep up), letting the
+	 * VOP's line buffer run dry for a frame -- producing exactly the
+	 * kind of brief white flash seen during active use. All values are
+	 * plain numeric bandwidth-threshold/frequency pairs, not phandles,
+	 * so a direct copy from stock is safe.
+	 */
+	vop-bw-dmc-freq = <0x00 0x11e 0x4f1a0 0x11f 0x1869f 0x80e80>;
+	vop-frame-bw-dmc-freq = <0x00 0x26c 0x4f1a0 0x26d 0x1869f 0xbe6e0>;
+	cpu-bw-dmc-freq = <0x00 0x15e 0x4f1a0 0x15f 0x190 0x80e80 0x191 0x1869f 0xbe6e0>;
+	system-status-level = <0x01 0x04 0x08 0x08 0x02 0x01 0x10 0x04 0x10000 0x04 0x1000 0x08 0x4000 0x08 0x2000 0x08 0xc00 0x08>;
+	auto-min-freq = <0x4f1a0>;
+	auto-freq-en = <0x01>;
+	upthreshold = <0x28>;
+	downdifferential = <0x14>;
+	#cooling-cells = <2>;
 };
 
 &dsi0 {
