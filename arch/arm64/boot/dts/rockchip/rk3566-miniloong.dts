@@ -45,6 +45,14 @@
 		};
 	};
 
+	rk_headset: rk-headset {
+		compatible = "rockchip_headset";
+		headset_gpio = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det>;
+		io-channels = <&saradc 2>;
+	};
+
 	backlight: backlight {
 		status = "okay";
 		compatible = "pwm-backlight";
@@ -688,6 +696,30 @@
 	status = "disabled";
 };
 
+/*
+ * Logo/splash deliberately disabled.
+ *
+ * route_dsi0 was tried with status = "okay" (matching stock) to hand
+ * a pre-drawn framebuffer from U-Boot to the kernel DRM driver. It
+ * compiled and had zero effect on how long the screen stayed blank --
+ * which is a useful result: it means logo,uboot/logo,kernel loading
+ * was never the source of the delay in the first place (most likely
+ * U-Boot on this build isn't actually configured/able to draw a
+ * splash at all, so there was nothing for the kernel to hand off
+ * regardless of this node's status).
+ *
+ * Given that, the fastest path is to make sure nothing even attempts
+ * to open/decode logo.bmp or logo_kernel.bmp, and let the kernel go
+ * straight to normal DRM/console output as soon as its display driver
+ * probes -- rather than spend any cycles on a logo path that wasn't
+ * doing anything useful anyway. status = "disabled" is the chip
+ * dtsi's own default (see rk3568.dtsi), so this line is only here to
+ * make that choice explicit and easy to find.
+ */
+&route_dsi0 {
+	status = "disabled";
+};
+
 &gpu {
 	mali-supply = <&vdd_gpu>;
 	mem-supply = <&vdd_gpu>;
@@ -1016,11 +1048,26 @@
 			spk-volume = <3>;
 			out-l2spk-r2hp;
 			/* Miniloong external speaker amp enable */
-			spk-ctl-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+			//spk-ctl-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
 			/* Miniloong headphone detect */
-			hp-det-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
+			//hp-det-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
+	};
+	es8316: es8316@10 {
+		status = "disabled";
+		#sound-dai-cells = <0>;
+		compatible = "everest,es8316";
+		reg = <0x10>;
+		clocks = <&cru I2S1_MCLKOUT>;
+		clock-names = "mclk";
+		assigned-clocks = <&cru I2S1_MCLKOUT>, <&cru I2S1_MCLK_TX_IOE>;
+		assigned-clock-rates = <11289600>;
+		assigned-clock-parents = <&cru I2S1_MCLKOUT_TX>, <&cru I2S1_MCLKOUT_TX>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s1m0_mclk>;
+		hp-det-gpio = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;		
+		//spk-con-gpio = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
 	};
 };
 
