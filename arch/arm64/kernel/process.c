@@ -317,7 +317,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	}
 }
 
-static void show_extra_register_data(struct pt_regs *regs, int nbytes)
+static void __maybe_unused show_extra_register_data(struct pt_regs *regs, int nbytes)
 {
 	mm_segment_t fs;
 	unsigned int i;
@@ -386,8 +386,8 @@ void show_regs(struct pt_regs * regs)
 	__show_regs(regs);
 	dump_backtrace(regs, NULL, KERN_DEFAULT);
 
-	if (!user_mode(regs))
-		show_extra_register_data(regs, 512);
+	/*if (!user_mode(regs))
+		show_extra_register_data(regs, 512);*/
 }
 EXPORT_SYMBOL_GPL(show_regs);
 
