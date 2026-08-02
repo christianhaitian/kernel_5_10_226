@@ -529,7 +529,7 @@
 	 * genuine per-unit hardware margin limit instead.
 	 */
 	dsi0_panel: panel@0 {
-		compatible = "miniloong,pocket1-panel";
+		compatible = "miniloong,pocket1-panel", "simple-panel-dsi";
 		reg = <0>;
 		backlight = <&backlight>;
 		enable-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
