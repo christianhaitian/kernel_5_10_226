@@ -1539,6 +1539,8 @@
 
 &u2phy0_otg {
 	status = "okay";
+	vbus-supply = <&otg_switch>;
+	phy-supply = <&otg_switch>;
 };
 
 &usb2phy0 {
