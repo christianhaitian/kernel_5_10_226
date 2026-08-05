@@ -283,6 +283,7 @@ struct charger_platform_data {
 	int otg5v_suspend_enable;
 	bool extcon;
 	bool validate_charger_with_pmic_plugin;
+	bool pmic_plugin_usb_fallback;
 	int gate_function_disable;
 };
 
@@ -1050,6 +1051,21 @@ static void rk817_charger_evt_worker(struct work_struct *work)
 	enum charger_t charger = USB_TYPE_UNKNOWN_CHARGER;
 	static const char * const event[] = {"UN", "NONE", "USB",
 					     "AC", "CDP1.5A"};
+	int plugin;
+	int usb;
+	int sdp;
+	int dcp;
+	int cdp;
+
+	plugin = rk817_charge_get_plug_in_status(charge);
+	usb = extcon_get_state(edev, EXTCON_USB);
+	sdp = extcon_get_state(edev, EXTCON_CHG_USB_SDP);
+	dcp = extcon_get_state(edev, EXTCON_CHG_USB_DCP);
+	cdp = extcon_get_state(edev, EXTCON_CHG_USB_CDP);
+
+	dev_info(charge->dev,
+		 "charger detect: plugin=%d usb=%d sdp=%d dcp=%d cdp=%d\n",
+		 plugin, usb, sdp, dcp, cdp);
 
 	/*
 	 * Some boards can expose a stale charger-type extcon state during early
@@ -1074,6 +1090,18 @@ static void rk817_charger_evt_worker(struct work_struct *work)
 		    event[charger]);
 		charge->usb_charger = charger;
 		rk817_charge_set_chrg_param(charge, charger);
+	} else if (charge->pdata->pmic_plugin_usb_fallback &&
+		   rk817_charge_get_plug_in_status(charge)) {
+		/*
+		 * The RK817 detects external VBUS, but this board's USB PHY has
+		 * not provided an SDP/DCP/CDP classification. Use the conservative
+		 * USB charger current limit rather than leaving charging disabled.
+		 */
+		dev_warn(charge->dev,
+			 "VBUS present without extcon charger type; using USB fallback\n");
+
+		charge->usb_charger = USB_TYPE_USB_CHARGER;
+		rk817_charge_set_chrg_param(charge, USB_TYPE_USB_CHARGER);
 	}
 }
 
@@ -1391,6 +1419,8 @@ static int rk817_charge_parse_dt(struct rk817_charger *charge)
 	pdata->extcon = of_property_read_bool(np, "extcon");
 	pdata->validate_charger_with_pmic_plugin =
 		of_property_read_bool(np, "rockchip,validate-charger-with-pmic-plugin");
+	pdata->pmic_plugin_usb_fallback =
+		of_property_read_bool(np, "rockchip,pmic-plugin-usb-fallback");
 
 	ret = of_property_read_u32(np, "max_chrg_current",
 				   &pdata->max_chrg_current);
@@ -1480,12 +1510,14 @@ static int rk817_charge_parse_dt(struct rk817_charger *charge)
 	    "extcon:%d\n"
 	    "virtual_power:%d\n"
 	    "power_dc2otg:%d\n"
-	    "validate_charger_with_pmic_plugin:%d\n",
+	    "validate_charger_with_pmic_plugin:%d\n"
+	    "pmic_plugin_usb_fallback:%d\n",
 	    pdata->max_input_current, pdata->min_input_voltage,
 	    pdata->max_chrg_current,  pdata->max_chrg_voltage,
 	    pdata->sample_res, pdata->extcon,
 	    pdata->virtual_power, pdata->power_dc2otg,
-	    pdata->validate_charger_with_pmic_plugin);
+	    pdata->validate_charger_with_pmic_plugin,
+	    pdata->pmic_plugin_usb_fallback);
 
 	return 0;
 }
@@ -1506,7 +1538,9 @@ static void rk817_charge_irq_delay_work(struct work_struct *work)
 		charge->plugin_trigger = 0;
 		if (charge->pdata->extcon)
 			queue_delayed_work(charge->usb_charger_wq, &charge->usb_work,
-					   msecs_to_jiffies(10));
+					   msecs_to_jiffies(
+						charge->pdata->pmic_plugin_usb_fallback ?
+						500 : 10));
 	} else if (charge->plugout_trigger) {
 		DBG("pmic: plug out\n");
 		charge->plugout_trigger = 0;

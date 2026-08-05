@@ -1008,6 +1008,7 @@
 			dc_det_adc = <0>;
 			extcon = <&usb2phy0>;
 			rockchip,validate-charger-with-pmic-plugin;
+			rockchip,pmic-plugin-usb-fallback;
 		};
 
 		rk817_codec: codec {
