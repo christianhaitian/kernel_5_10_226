@@ -987,6 +987,34 @@ void rockchip_drm_show_logo(struct drm_device *drm_dev)
 		return;
 	}
 
+	/*
+	 * Some display routes cannot safely inherit the state configured by
+	 * U-Boot. Keep the U-Boot logo visible, but let Linux initialize the
+	 * DRM pipeline from a clean state when an enabled route requests it.
+	 *
+	 * Add this property to the affected route node, for example route_dsi0:
+	 *
+	 *     rockchip,skip-loader-logo-handoff;
+	 *
+	 * Scan the routes before importing loader memory. This remains a runtime
+	 * check, so all loader-logo helper functions stay referenced when the
+	 * kernel is built with -Werror.
+	 */
+	for_each_child_of_node(root, route) {
+		if (!of_device_is_available(route))
+			continue;
+
+		if (of_property_read_bool(route,
+					  "rockchip,skip-loader-logo-handoff")) {
+			dev_info(drm_dev->dev,
+				 "skipping loader logo handoff for %pOF\n",
+				 route);
+			of_node_put(route);
+			of_node_put(root);
+			return;
+		}
+	}
+
 	if (init_loader_memory(drm_dev)) {
 		dev_warn(drm_dev->dev, "failed to parse loader memory\n");
 		return;
