@@ -152,6 +152,7 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-353v.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-353v-notimingchange.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-503.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-miniloong.dtb
+dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-miniloong-uboot.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-rgb30.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-rgb30-v2.dtb
 dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3566-rgb20pro.dtb
